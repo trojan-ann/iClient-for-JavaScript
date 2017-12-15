@@ -144,6 +144,9 @@ SuperMap.Layer.HeatMapWeight = SuperMap.Class(SuperMap.Layer.HeatMapLayer, {
             //如果items里面的权重范围大，则以items里面的为准
             this.minWeight = this.minWeight<min? this.minWeight : min;
             this.maxWeight = this.maxWeight>max ? this.maxWeight : max;
+            //用户设置的范围大小不能超过当前bounds内的数据的范围大小
+            this.minWeight = this.minWeight < this.boundsminWeight ? this.boundsminWeight : this.minWeight;
+            this.maxWeight = this.maxWeight > this.boundsmaxWeight ? this.boundsmaxWeight : this.maxWeight;
             this.tempValue = this.maxWeight - this.minWeight;
 
             for(var i = 0;i<len;i++)

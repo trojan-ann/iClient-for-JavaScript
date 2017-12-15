@@ -439,6 +439,9 @@ SuperMap.Tile.CanvasImage = SuperMap.Class(SuperMap.Tile, {
     displayImage: function(image,idx) {
         var me = this,
             layer = me.layer;
+        if(!layer){
+            return;
+        }
         if (layer.canvasFilter && !image.filtered) {
             // if a filter is set, apply the filter first and
             // then use the result

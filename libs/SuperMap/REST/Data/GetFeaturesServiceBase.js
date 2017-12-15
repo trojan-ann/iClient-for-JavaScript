@@ -77,17 +77,20 @@ SuperMap.REST.GetFeaturesServiceBase = SuperMap.Class(SuperMap.ServiceBase, {
      *         默认值是0，如果该值大于查询结果的最大索引号，则查询结果为空。
      */
     fromIndex: 0,
-    
-    /** 
+
+    /**
      * Property: toIndex
-     * {Integer} 查询结果的最大索引号。 
+     * {Integer} 查询结果的最大索引号。
      *         如果该值大于查询结果的最大索引号，则以查询结果的最大索引号为终止索引号。
+     *         在SQL查询时，如果没有设置maxFeatures，再把toIndex设置为-1，则会请求所有的要素。
      */
     toIndex: 19,
 
     /**
      * APIProperty: maxFeatures
      * {Integer} 进行SQL查询时，用于设置服务端返回查询结果条目数量，默认为1000。
+     *           如果同时设置了maxFeatures以及toIndex，则以最小的数目为准，比如设置了toIndex为100，maxFeatures为50,则只会返回50条记录；
+     *           如果设置toIndex为10，maxFeatures为50,则会返回0到10总共11条记录
      */
     maxFeatures: null,
     
@@ -185,14 +188,15 @@ SuperMap.REST.GetFeaturesServiceBase = SuperMap.Class(SuperMap.ServiceBase, {
             me.url += "returnContent=" + me.returnContent;
             firstPara = false;
         }
-        if(me.fromIndex != null && me.toIndex != null && !isNaN(me.fromIndex) && !isNaN(me.toIndex) && me.fromIndex >= 0 && me.toIndex >= 0 && !firstPara) {
-            me.url += "&fromIndex=" + me.fromIndex + "&toIndex=" + me.toIndex;
-        }
-        /* if(me.fromIndex != null && me.toIndex != null && !isNaN(me.fromIndex) && !isNaN(me.toIndex) && me.fromIndex >= 0 && me.toIndex >= 0 && firstPara) {
+        if(me.fromIndex != null && me.toIndex != null && !isNaN(me.fromIndex) && !isNaN(me.toIndex) && me.fromIndex >= -1 && me.toIndex >= -1) {
+            !firstPara && (me.url += '&');
             me.url += "fromIndex=" + me.fromIndex + "&toIndex=" + me.toIndex;
-        } */
-        if(params.returnCountOnly) me.url += "&returnCountOnly=" + params.returnContent;
-        jsonParameters = me.getJsonParameters(params);   
+        }
+        if(params.returnCountOnly) {
+            !firstPara && (me.url += '&');
+            me.url += "returnCountOnly=" + params.returnContent;
+        }
+        jsonParameters = me.getJsonParameters(params);
         me.request({
             method: "POST",
             data: jsonParameters,

@@ -117,7 +117,7 @@ SuperMap.Layer.Baidu = SuperMap.Class(SuperMap.CanvasLayer, {
         SuperMap.CanvasLayer.prototype.initialize.apply(me, [me.name, me.url, null, options]);
 
         me.units = "m";
-		//投影从非官方的900913改为3857
+		//投影从非官方的900913改为3857，以便量算时，可以模拟使用未偏移的3857模拟偏移的火星坐标，算出相对准确的结果
         me.projection = "EPSG:3857";
     },
 

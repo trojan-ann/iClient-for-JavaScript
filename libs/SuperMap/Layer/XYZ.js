@@ -119,8 +119,13 @@ SuperMap.Layer.XYZ = SuperMap.Class(SuperMap.CanvasLayer, {
             var s = '' + xyz.x + xyz.y + xyz.z;
             url = this.selectUrl(s, url);
         }
-        
-        return SuperMap.String.format(url, xyz);
+        var url = SuperMap.String.format(url, xyz);
+        if(this.tileProxy){
+            url = this.tileProxy + encodeURIComponent(url);
+        }else if(this.proxy){
+            url = this.proxy + encodeURIComponent(url);
+        }
+        return url;
     },
     
     /**

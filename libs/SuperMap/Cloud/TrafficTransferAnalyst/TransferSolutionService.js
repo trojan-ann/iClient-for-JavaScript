@@ -81,8 +81,9 @@ SuperMap.Cloud.TransferSolutionService = SuperMap.Class(SuperMap.ServiceBase, {
      *
      * Parameters:
      * params - {<SuperMap.Cloud.TransferSolutionParameters>} 公交换乘参数。
+     * credential - {<SuperMap.Credential>} 权限信息
      */
-    processAsync: function(params) {
+    processAsync: function(params, credential) {
         if(!params){
             return;
         }
@@ -95,6 +96,7 @@ SuperMap.Cloud.TransferSolutionService = SuperMap.Class(SuperMap.ServiceBase, {
             method: "GET",
             params: params.toQueryObject(),
             scope: me,
+            credential: credential,
             success: me.TransferSolutionComplted,
             failure: me.TransferSolutionFailed
         });

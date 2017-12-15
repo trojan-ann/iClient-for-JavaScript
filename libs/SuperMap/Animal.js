@@ -190,9 +190,9 @@ SuperMap.Animal = SuperMap.Class({
     animalEnd: function() {
         this.aniFinish = true;
         this.aniCtx.clearRect(0, 0, this.width, this.height);
-        this.aniCtx.drawImage(this.baseCanvas, 0, 0, this.width, this.height);
+        this.baseCanvas && this.aniCtx.drawImage(this.baseCanvas, 0, 0, this.width, this.height);
         this.layer.div.removeChild(this.aniCanvas);
-        this.baseCanvas.style.display = "";
+        this.baseCanvas && (this.baseCanvas.style.display = "");
     },
 
     //执行缩放动画

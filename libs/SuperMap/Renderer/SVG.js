@@ -367,10 +367,11 @@ SuperMap.Renderer.SVG = SuperMap.Class(SuperMap.Renderer.Elements, {
                 if(gradientId){
                     fillColor="url(#"+gradientId+")";
                     node.setAttributeNS(null, "style", "fill:"+fillColor);
-                    node.setAttributeNS(null, "fill-opacity", style.fillOpacity);
+                    node.setAttributeNS(null, "fill-opacity", 1);
                     node.style.fill=fillColor;
                 }
             }else{
+                node.setAttributeNS(null, "style", "");
                 node.setAttributeNS(null, "fill", fillColor);
 				node.setAttributeNS(null, "fill-opacity", style.fillOpacity);
             }

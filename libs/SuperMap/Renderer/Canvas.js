@@ -14,6 +14,12 @@
  *  - <SuperMap.Renderer>
  */
 SuperMap.Renderer.Canvas = SuperMap.Class(SuperMap.Renderer, {
+    /**
+     * Property: tempImage
+     * {Element} 一个临时的链接对象，用来转换相对地址为绝对地址
+     */
+    tempLink:null,
+
     //{src:src, img:img}
     //srcArr:[],
    // imgArr: {},
@@ -81,6 +87,8 @@ SuperMap.Renderer.Canvas = SuperMap.Class(SuperMap.Renderer, {
             this.hitCanvas = document.createElement("canvas");
             this.hitContext = this.hitCanvas.getContext("2d");
         }
+        this.element = document.createElement('span');
+        this.tempLink = document.createElement('a');
     },
     
     /**
@@ -313,19 +321,39 @@ SuperMap.Renderer.Canvas = SuperMap.Class(SuperMap.Renderer, {
                     t.hitContext.fillRect(0, 0, width, height);
                     t.hitContext.restore();
                 }
+
+                //为保证外部图片绘制顺序，在图片第一次加载，及图片路径改变的情况下，在图片绘制完成后触发一次图层重绘事件
+                if (!this.notRedraw) {
+                    t.features[featureId][0].img = this.img;
+                    //在100毫秒之后再重绘，以防止网速很快时，且图片要素很多的时候，引起很多不必要的重绘
+                    t.redrawByImgLoadEndTimeOutId && window.clearTimeout(t.redrawByImgLoadEndTimeOutId);
+                    t.redrawByImgLoadEndTimeOutId = window.setTimeout(function(){
+                        t.redraw();
+                    },100);
+                }
             }
         };
 
         if(this.features[featureId][0].img) {
             var img =  this.features[featureId][0].img;
-            //img.src = style.externalGraphic;
-            //覆盖上次的 onload，防止不一致(暂时没发现不一致有什么影响，如果没有影响可以直接onload.call)
-            img.onload.call({
+            var featureInfo = {
                 featureId : featureId,
                 geometry :geometry,
                 style : style,
                 img:img
-            });
+            };
+            t.tempLink.href = style.externalGraphic;
+            var externalGraphic = t.tempLink.href;
+            t.tempLink.href = undefined;
+            if(img.src === externalGraphic){
+                featureInfo.notRedraw = true;
+                onLoad.call(featureInfo);
+            }else{
+                img.onload = function() {
+                    onLoad.call(featureInfo);
+                };
+                img.src = style.externalGraphic;
+            }
         }
         else {
             var img = new Image();
@@ -422,7 +450,8 @@ SuperMap.Renderer.Canvas = SuperMap.Class(SuperMap.Renderer, {
             this.hitContext.globalAlpha = 1.0;
             this.hitContext.strokeStyle = hex;
             // bump up stroke width to deal with antialiasing
-            this.hitContext.lineWidth = symbolizer.strokeWidth + 2;
+            //把选中的范围调大，从2像素调整为6像素，即一边多3像素
+            this.hitContext.lineWidth = symbolizer.strokeWidth + 6;
         } else {
             this.hitContext.globalAlpha = 0;
             this.hitContext.lineWidth = 1;
@@ -791,7 +820,7 @@ SuperMap.Renderer.Canvas = SuperMap.Class(SuperMap.Renderer, {
      * location - {<SuperMap.Point>}
      * style    - {Object}
      */
-    drawText: function(location, style) {
+    drawText: function(location, style, featureId) {
         style = SuperMap.Util.extend({
             fontColor: "#000000",
             labelAlign: "cm"
@@ -807,12 +836,21 @@ SuperMap.Renderer.Canvas = SuperMap.Class(SuperMap.Renderer, {
 
         this.setCanvasStyle("reset");
         this.canvas.fillStyle = style.fontColor;
-        this.canvas.globalAlpha = style.fontOpacity || 1.0;
+        if(style.fontOpacity>=0 && style.fontOpacity <=1 && style.fontOpacity != null) {
+            this.canvas.globalAlpha = style.fontOpacity;
+        }
+        else {
+            this.canvas.globalAlpha = 1.0;
+        }
         var fontStyle = [style.fontStyle ? style.fontStyle : "normal",
                          "normal", // "font-variant" not supported
                          style.fontWeight ? style.fontWeight : "normal",
                          style.fontSize ? style.fontSize : "1em",
                          style.fontFamily ? style.fontFamily : "sans-serif"].join(" ");
+        if(style.isUnicode){
+            style.label = style.label.replace(/^&#x/,'');
+            style.label = String.fromCharCode(parseInt(style.label,16));
+        }
         var labelRows = style.label.split('\n');
         var numRows = labelRows.length;
         if (this.canvas.fillText) {
@@ -844,6 +882,10 @@ SuperMap.Renderer.Canvas = SuperMap.Class(SuperMap.Renderer, {
                 }else{
                     this.canvas.fillText(labelRows[i], pt[0], pt[1] + (lineHeight*i));
                 }
+
+            }
+            if (!!featureId && style.labelSelect) {
+                this.drawTextRect(pt[0], pt[1], style, fontStyle, labelRows, featureId);
             }
         } else if (this.canvas.mozDrawText) {
             // Mozilla pre-Gecko1.9.1 (<FF3.1)
@@ -868,8 +910,80 @@ SuperMap.Renderer.Canvas = SuperMap.Class(SuperMap.Renderer, {
                 this.canvas.mozDrawText(labelRows[i]);
                 this.canvas.translate(-x, -y);
             }
+            if (!!featureId && style.labelSelect) {
+                this.drawTextRect(x, y, style, fontStyle, labelRows, featureId);
+            }
         }
         this.setCanvasStyle("reset");
+    },
+
+    /**
+     * Method: drawTextRect
+     *
+     * Parameters:
+     * x - {Number}
+     * y - {Number}
+     * style - {Object}
+     * fontStyle - {Object}
+     * labelRows - {Array}
+     * featureId - {String}
+     */
+    drawTextRect: function(x, y, style, fontStyle, labelRows, featureId) {
+        var textWidth = 0;
+        var textHeight = 0;
+        var originX = x;
+        var originY = y;
+        fontStyle = fontStyle.split(" ");
+        var fontStyleObj = {
+            fontWeight: fontStyle[2],
+            fontSize: fontStyle[3],
+            fontFamily: fontStyle[4]
+        }
+        for (var i = 0, len = labelRows.length; i < len; i++) {
+            var textBounds = SuperMap.Util.getTextBounds(fontStyleObj, labelRows[i], this.element);
+            if (textBounds.textWidth > textWidth) textWidth = textBounds.textWidth;
+            textHeight += textBounds.textHeight;
+        }
+
+        switch (this.canvas.textAlign) {
+            case "left":
+                break;
+            case "right":
+                x = x - textWidth;
+                break;
+            case "center":
+                x = x - textWidth / 2;
+                break;
+        }
+        switch (this.canvas.textBaseline) {
+            case "top":
+                //y = y + textHeight;
+                break;
+            case "bottom":
+                y = y - textHeight;
+                break;
+            case "center":
+                y = y - textHeight / 2;
+                break;
+        }
+
+        if (style.labelRotation !== 0) {
+            if (this.hitDetection) {
+                this.hitContext.save();
+                this.hitContext.translate(originX, originY)
+                this.hitContext.rotate(style.labelRotation * Math.PI / 180);
+                this.hitContext.translate(-originX, -originY);
+                this.setHitContextStyle("fill", featureId, style);
+                this.hitContext.fillRect(x, y, textWidth, textHeight);
+                this.hitContext.restore();
+            }
+        } else {
+            if (this.hitDetection) {
+                this.setHitContextStyle("fill", featureId, style);
+                this.hitContext.fillRect(x, y, textWidth, textHeight);
+            }
+        }
+
     },
 
     /**
@@ -950,7 +1064,7 @@ SuperMap.Renderer.Canvas = SuperMap.Class(SuperMap.Renderer, {
         var feature = null;
         if (this.hitDetection) {
             // this dragging check should go in the feature handler
-            if (!this.map.dragging) {
+            if (this.map && !this.map.dragging) {
                 var xy = evt.xy;
                 var x = xy.x | 0;
                 var y = xy.y | 0;
@@ -1001,19 +1115,28 @@ SuperMap.Renderer.Canvas = SuperMap.Class(SuperMap.Renderer, {
             if (this.hitDetection) {
                 this.hitContext.clearRect(0, 0, width, height);
             }
-            var labelMap = [];
+            //var labelMap = [];
             var feature, style;
             for (var id in this.features) {
                 if (!this.features.hasOwnProperty(id)) { continue; }
                 feature = this.features[id][0];
                 style = this.features[id][1];
                 //console.log("redraw,id:"+id+",style:"+style.externalGraphic);
-                this.drawGeometry(feature.geometry, style, feature.id);
+                if(style.fill !== false || style.stroke !== false){
+                    this.drawGeometry(feature.geometry, style, feature.id);
+                }
                 if(style.label) {
-                    labelMap.push([feature, style]);
+                    //labelMap.push([feature, style]);
+                    var location = feature.geometry.getCentroid();
+                    if(location == null)
+                    {
+                        continue;
+                    }
+                    var featureId = feature.id;
+                    this.drawText(location, style, featureId);
                 }
             }
-            var item;
+            /*var item;
             for (var i=0, len=labelMap.length; i<len; ++i) {
                 item = labelMap[i];
                 //如果获取标签位置失败，不绘制该标签。
@@ -1022,8 +1145,9 @@ SuperMap.Renderer.Canvas = SuperMap.Class(SuperMap.Renderer, {
                 {
                     continue;
                 }
-                this.drawText(location, item[1]);
-            }
+                var featureId = item[0].id;
+                this.drawText(location, item[1], featureId);
+            }*/
         }    
     },
 

@@ -5,7 +5,7 @@ test("testEditor_Constructor",function () {
     var baseLayer = new SuperMap.Layer.TiledDynamicRESTLayer("World", GlobeParameter.WorldURL, null, {maxResolution: "auto"});
     baseLayer.events.on({"layerInitialized": addLayer});
     var plottingLayer = new SuperMap.Layer.PlottingLayer("PlottingLayer", GlobeParameter.plotUrl);
-    var plottingEdit = new SuperMap.Control.PlottingEdit(plottingLayer);
+    var plottingEdit = new SuperMap.Control.PlottingEdit();
     function addLayer() {
         map.addLayers([baseLayer, plottingLayer]);
         map.setCenter(new SuperMap.LonLat(0, 0), 0);
@@ -23,17 +23,16 @@ test("testEditor_Destroy",function () {
     var baseLayer = new SuperMap.Layer.TiledDynamicRESTLayer("World", GlobeParameter.WorldURL, null, {maxResolution: "auto"});
     baseLayer.events.on({"layerInitialized": addLayer});
     var plottingLayer = new SuperMap.Layer.PlottingLayer("PlottingLayer", GlobeParameter.plotUrl);
-    var plottingEdit = new SuperMap.Control.PlottingEdit(plottingLayer);
+    var plottingEdit = new SuperMap.Control.PlottingEdit();
     function addLayer() {
         map.addLayers([baseLayer, plottingLayer]);
         map.setCenter(new SuperMap.LonLat(0, 0), 0);
     }
-    var editor = new SuperMap.Plot.Editor(map, {activeLayer:plottingLayer, plottingEdit:plottingEdit});
-
+    var editor = new SuperMap.Plot.Editor(map,{activeLayer:plottingLayer, plottingEdit:plottingEdit});
     editor.destroy();
-    ok(editor !== null, "not null");
+    ok(editor !== null, "editor not null");
     ok(editor.map === null, "editor.map is null");
-    ok(editor.activeLayer === null, "editor.activeLayer is null");
+    ok(editor.pasteGeoAry === null, "editor.pasteGeoAry is null");
 });
 
 
@@ -42,7 +41,7 @@ asyncTest("testEditor_copyFeatures",function(){
     var baseLayer = new SuperMap.Layer.TiledDynamicRESTLayer("World", GlobeParameter.WorldURL, null, {maxResolution: "auto"});
     baseLayer.events.on({"layerInitialized": addLayer});
     var plottingLayer = new SuperMap.Layer.PlottingLayer("PlottingLayer", GlobeParameter.plotUrl);
-    var plottingEdit = new SuperMap.Control.PlottingEdit(plottingLayer);
+    var plottingEdit = new SuperMap.Control.PlottingEdit();
     var editor,features=[];
     var libID=421;
     var code=2;
@@ -81,7 +80,7 @@ asyncTest("testEditor_copy",function(){
     var baseLayer = new SuperMap.Layer.TiledDynamicRESTLayer("World", GlobeParameter.WorldURL, null, {maxResolution: "auto"});
     baseLayer.events.on({"layerInitialized": addLayer});
     var plottingLayer = new SuperMap.Layer.PlottingLayer("PlottingLayer", GlobeParameter.plotUrl);
-    var plottingEdit = new SuperMap.Control.PlottingEdit(plottingLayer);
+    var plottingEdit = new SuperMap.Control.PlottingEdit();
     var editor,features=[];
     var libID=421;
     var code=2;
@@ -101,7 +100,7 @@ asyncTest("testEditor_copy",function(){
     }
     setTimeout(function () {
         try{
-            editor.activeLayer.selectedFeatures.push(features[0]);
+            plottingLayer.selectedFeatures.push(features[0]);
             editor.copy();
             equal(editor.pasteGeoAry.length, 1, "testEditor_copy");
             start();
@@ -122,7 +121,7 @@ asyncTest("testEditor_paste",function(){
     var baseLayer = new SuperMap.Layer.TiledDynamicRESTLayer("World", GlobeParameter.WorldURL, null, {maxResolution: "auto"});
     baseLayer.events.on({"layerInitialized": addLayer});
     var plottingLayer = new SuperMap.Layer.PlottingLayer("PlottingLayer", GlobeParameter.plotUrl);
-    var plottingEdit = new SuperMap.Control.PlottingEdit(plottingLayer);
+    var plottingEdit = new SuperMap.Control.PlottingEdit();
     var editor,features=[];
     var libID=421;
     var code=2;
@@ -142,10 +141,10 @@ asyncTest("testEditor_paste",function(){
     }
     setTimeout(function () {
         try{
-            editor.activeLayer.selectedFeatures.push(features[0]);
+            plottingLayer.selectedFeatures.push(features[0]);
             editor.copy();
             editor.paste();
-            equal( editor.activeLayer.features.length, 2, "testEditor_paste");
+            equal( plottingLayer.features.length, 2, "testEditor_paste");
             start();
         } catch(exception){
             ok(false, "exception occcurs,message is:" + exception.message);
@@ -162,7 +161,7 @@ asyncTest("testEditor_cut",function(){
     var baseLayer = new SuperMap.Layer.TiledDynamicRESTLayer("World", GlobeParameter.WorldURL, null, {maxResolution: "auto"});
     baseLayer.events.on({"layerInitialized": addLayer});
     var plottingLayer = new SuperMap.Layer.PlottingLayer("PlottingLayer", GlobeParameter.plotUrl);
-    var plottingEdit = new SuperMap.Control.PlottingEdit(plottingLayer);
+    var plottingEdit = new SuperMap.Control.PlottingEdit();
     var editor,features=[];
     var libID=421;
     var code=2;
@@ -182,9 +181,9 @@ asyncTest("testEditor_cut",function(){
     }
     setTimeout(function () {
         try{
-            editor.activeLayer.selectedFeatures.push(features[0]);
+            plottingLayer.selectedFeatures.push(features[0]);
             editor.cut();
-            equal( editor.activeLayer.features.length, 0, "testEditor_cut");
+            equal( plottingLayer.features.length, 0, "testEditor_cut");
             equal( editor.pasteGeoAry.length, 1, "testEditor_cut");
             start();
         } catch(exception){

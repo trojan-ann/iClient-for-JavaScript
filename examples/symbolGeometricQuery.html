@@ -26,7 +26,7 @@
 
     <script src="../libs/SuperMap.Include.js"></script>
     <script type="text/javascript">
-        var plottingLayer,plottingEdit, layer;
+        var plottingLayer,plottingEdit, layer,  symbolLibManager;
         var drawGraphicObject;
         var map;
         var host = document.location.toString().match(/file:\/\//) ? "http://localhost:8090" : 'http://' + document.location.host;
@@ -61,25 +61,29 @@
 
             plotting = SuperMap.Plotting.getInstance(map, serverUrl);
 
+            //态势标绘编辑
+            plottingEdit = new SuperMap.Control.PlottingEdit();
+
             //
             vectorLayer = new SuperMap.Layer.PlottingLayer("Vector Layer", serverUrl);
 
             drawGraphicObject = new SuperMap.Control.DrawFeature(vectorLayer, SuperMap.Handler.GraphicObject);
             drawGraphicObject.events.on({"featureadded": drawCircleCompleted});
-            map.addControls([drawGraphicObject]);
+            map.addControls([drawGraphicObject,plottingEdit]);
         }
 
         function addLayer() {
             map.addLayers([layer, plottingLayer,vectorLayer]);
             map.setCenter(new SuperMap.LonLat(0, 0), 0);
-
+            plottingEdit.activate();
             //加载标号库
             loadSymbolLib();
         }
 
         function loadSymbolLib()
         {
-            symbolLibManager = plotting.symbolLibManager;
+             symbolLibManager = plotting.getSymbolLibManager();
+            symbolLibManager.libIDs=[421];
             symbolLibManager.events.on({"initializeCompleted":symbolLibInitializeCompleted});
             symbolLibManager.initializeAsync();
         }
@@ -93,7 +97,7 @@
         function plotSymbol(){
             var symbolLib = symbolLibManager.getSymbolLibByIndex(0);
 
-            var libId = 421;
+            var libID = 421;
             var code = 20100;
 
             for(var i = 0; i < 10; i++)
@@ -102,7 +106,7 @@
                 var x = Math.random()*100;
                 var y = Math.random()*50;
                 pts.push(new SuperMap.Geometry.Point(x, y));
-                plottingLayer.createSymbolWC(libId,code,pts);
+                plottingLayer.createSymbolWC(libID,code,pts);
             }
 
             for(var i = 0; i < 10; i++)
@@ -111,7 +115,7 @@
                 var x = -Math.random()*100;
                 var y = Math.random()*50;
                 pts.push(new SuperMap.Geometry.Point(x, y));
-                plottingLayer.createSymbolWC(libId,code,pts);
+                plottingLayer.createSymbolWC(libID,code,pts);
             }
 
             for(var i = 0; i < 10; i++)
@@ -120,7 +124,7 @@
                 var x = Math.random()*100;
                 var y = -Math.random()*50;
                 pts.push(new SuperMap.Geometry.Point(x, y));
-                plottingLayer.createSymbolWC(libId,code,pts);
+                plottingLayer.createSymbolWC(libID,code,pts);
             }
 
             for(var i = 0; i < 10; i++)
@@ -129,7 +133,7 @@
                 var x = -Math.random()*100;
                 var y = -Math.random()*50;
                 pts.push(new SuperMap.Geometry.Point(x, y));
-                plottingLayer.createSymbolWC(libId,code,pts);
+                plottingLayer.createSymbolWC(libID,code,pts);
             }
         }
 
@@ -137,8 +141,8 @@
         function setDefualtStyle()
         {
             var defualtStyle = plotting.getDefaultStyle();
-            defualtStyle.setDefaultFlag(true);
-            defualtStyle.setLineColor("#00FF00");
+            //defualtStyle.setDefaultFlag(true);
+            defualtStyle.lineColor = "#00FF00";
         }
 
         function drawCircleCompleted(obj){
@@ -273,6 +277,25 @@
             resetGeometryStyle();
             clearStatus();
         }
+
+        function PlottingDrawCancel(){
+
+            drawGraphicObject.deactivate();
+            plottingEdit.deactivate();
+            plottingEdit.activate();
+
+        }
+
+        document.onmouseup = function (evt) {
+            var evt = evt || window.event;
+            if (evt.button === 2) {
+                PlottingDrawCancel();
+                cancle();
+                return false;
+            }
+            evt.stopPropagation();
+        }
+
 
     </script>
 </head>

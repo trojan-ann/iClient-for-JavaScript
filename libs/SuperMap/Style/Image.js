@@ -8,8 +8,8 @@
 
 /**
  * Class: SuperMap.Style.Image
- * 图形形类基类. Base cladd for {<SuperMap.Style.Circle>}，{<SuperMap.Style.Clover>},
- * {<SuperMap.Style.HitClover>},{<SuperMap.Style.RegularShape>}
+ * 图形形类基类. {<SuperMap.Style.Circle>}，{<SuperMap.Style.Clover>},
+ * {<SuperMap.Style.HitClover>},{<SuperMap.Style.RegularShape>}都继承自它。
  */
 SuperMap.Style.Image = new SuperMap.Class({
 
@@ -66,8 +66,8 @@ SuperMap.Style.Image = new SuperMap.Class({
     size: null,
 
     /**
-     * Constructor: SuperMap.Style.Circle
-     * 圆形
+     * Constructor: SuperMap.Style.Image
+     * 图像样式
      *
      * Parameters:
      * opt_options - {Object}

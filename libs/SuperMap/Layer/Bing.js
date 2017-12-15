@@ -31,9 +31,9 @@ SuperMap.Layer.Bing = SuperMap.Class(SuperMap.CanvasLayer, {
      * {String}默认的Bing的三个中国范围地图的服器地址，不需要要用户设置
      */
     url: [
-        'http://dynamic.t0.tiles.ditu.live.com/comp/ch/${quadKey}?it=G,OS,L&mkt=en-us&cstl=w4c&ur=cn',
-        'http://dynamic.t1.tiles.ditu.live.com/comp/ch/${quadKey}?it=G,OS,L&mkt=en-us&cstl=w4c&ur=cn',
-        'http://dynamic.t2.tiles.ditu.live.com/comp/ch/${quadKey}?it=G,OS,L&mkt=en-us&cstl=w4c&ur=cn'
+        'http://dynamic.t0.tiles.ditu.live.com/comp/ch/${quadKey}?it=G,TW,L,LA&mkt=zh-cn&og=109&cstl=w4c&ur=CN&n=z',
+        'http://dynamic.t1.tiles.ditu.live.com/comp/ch/${quadKey}?it=G,TW,L,LA&mkt=zh-cn&og=109&cstl=w4c&ur=CN&n=z',
+        'http://dynamic.t2.tiles.ditu.live.com/comp/ch/${quadKey}?it=G,TW,L,LA&mkt=zh-cn&og=109&cstl=w4c&ur=CN&n=z'
     ],
 
     /**

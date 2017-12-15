@@ -117,6 +117,12 @@ SuperMap.InfoWindow = SuperMap.Class({
      * */
     feature: null,
 
+    /*
+     * APIProperty:content
+     * {Object} 弹窗偏移量
+     * */
+    offset: {x:0,y:0},
+
 
     /**
      * Constructor: SuperMap.InfoWindow
@@ -125,7 +131,7 @@ SuperMap.InfoWindow = SuperMap.Class({
      * (code)
      * var InfoWindow = new SuperMap.InfoWindow("chicken",
      *                    new SuperMap.Size(200,200),
-     *                    "元素信息"
+     *                    "元素信息",
      *                    "example InfoWindow",
      *                    true);
      * InfoWindow.closeOnMove = true;
@@ -138,7 +144,7 @@ SuperMap.InfoWindow = SuperMap.Class({
      * title - {String}       弹窗标题名
      * contentHTML - {String}          弹窗中显示的一个HTML要素的字符串。
      */
-    initialize: function (id, title, content, contentHTML) {
+    initialize: function (id, title, options) {
         if (id == null) {
             id = SuperMap.Util.createUniqueID(this.CLASS_NAME + "_");
         }
@@ -146,23 +152,24 @@ SuperMap.InfoWindow = SuperMap.Class({
         this.id = id;
         this.title = (title != null) ? title : this.title;
 
-        this.contentSize = new SuperMap.Size(
-            this.default_width,
-            this.default_height);
-
-        if (content !== null) {
-            if (content instanceof SuperMap.Feature) {
-                this.feature = content;
-                this.content = SuperMap.Util.extend({}, this.feature.attributes);
-            }
-            else {
-                this.content = content;
-            }
-
+        this.contentSize = options && options.contentSize;
+        if(!this.contentSize) {
+            this.contentSize = new SuperMap.Size(this.default_width, this.default_height);
         }
 
-        if (contentHTML != null) {
-            this.contentHTML = contentHTML;
+        if(options && options.size) {
+            this.size= options.size
+        }else {
+            this.size = new SuperMap.Size(this.default_width, this.default_height+37);
+        }
+        if(options && options.map) {
+            this.map = options.map;
+        }
+        if(options && options.titleBox) {
+            this.titleBox = options.titleBox;
+        }
+        if(options && options.closeBox) {
+            this.closeBox = options.closeBox;
         }
         this.render();
     },
@@ -272,7 +279,6 @@ SuperMap.InfoWindow = SuperMap.Class({
         this.setOpacity();
         this.setBorder();
         this.setLonLat();
-        this.setContentHTML();
 
         return this.div;
     },
@@ -296,10 +302,14 @@ SuperMap.InfoWindow = SuperMap.Class({
      *
      * Parameters:
      * lonLat - {String} 弹窗的地理坐标
+     * offset - {Object} 弹窗偏移量
      */
-    setLonLat: function (lonLat) {
-        if (lonLat != null) {
-            this.lonLat = lonLat;
+    setLonLat: function (lonlat,offset) {
+        if(offset) {
+            this.offset = offset;
+        }
+        if (lonlat) {
+            this.lonLat = lonlat;
             if (this.map) {
                 this.updatePosition();
             }
@@ -314,8 +324,8 @@ SuperMap.InfoWindow = SuperMap.Class({
      */
     moveTo: function (px) {
         if ((px != null) && (this.div != null)) {
-            this.div.style.left = px.x - this.size.w * 0.5 + "px";
-            this.div.style.top = px.y - this.size.h - 25 + "px";
+            this.div.style.left = px.x - this.size.w * 0.5 - this.offset.x + "px";
+            this.div.style.top = px.y - this.size.h - 25 - this.offset.y + "px";
         }
     },
 
@@ -347,15 +357,19 @@ SuperMap.InfoWindow = SuperMap.Class({
         if (this.visible()) {
             this.hide();
         } else {
-            this.show();
+            this.show(this.feature);
         }
     },
-
     /**
      * APIMethod: show
      * 显示弹窗
+     *
+     * Parameters:
+     * titleArray 显示弹窗的要素
+     * content 用户自定义弹窗的内容
      */
-    show: function () {
+    show: function (titleArray,content) {
+        this.setContentHTML(titleArray,content);
         if (this.div) {
             this.div.style.display = 'block';
         }
@@ -457,27 +471,45 @@ SuperMap.InfoWindow = SuperMap.Class({
      * Parameters:
      * contentHTML - {String} 弹窗内容
      */
-    setContentHTML: function (contentHTML) {
-
-        if (contentHTML != null) {
-            this.contentHTML = contentHTML;
-        }
-        if (this.content != null) {
-            var contentHtml = '<table class="content-table">';
-            for (var key in this.content) {
-                contentHtml = contentHtml + '<tr><td><b>' + key + '</b></td><td>' + this.content[key] + '</td></tr>';
+    setContentHTML: function (titleArray,content) {
+        if(content) {
+            if(typeof(content) === "object") {
+                //传入的对象属性
+                var contentHtml = '<table class="content-table">';
+                if(titleArray && titleArray.length>0) {
+                    for (var key=0; key<titleArray.length; key++) {
+                        var title = titleArray[key];
+                        if(key % 2 === 0) {
+                            contentHtml = contentHtml + '<tr><td class="col-xs-5"><span title="'+ title +'">' + title + '</span></td><td class="col-xs-5">' + content[title] + '</td></tr>';
+                        } else {
+                            contentHtml = contentHtml + '<tr class="gray-line"><td class="col-xs-5 title-td"><span title="'+ title +'">' + title + '</span></td><td class="col-xs-5">' + content[title] + '</td></tr>';
+                        }
+                    }
+                } else {
+                    key = 0;
+                    this.content = SuperMap.Util.extend({}, content.attributes);
+                    for(var propTitle in this.content) {
+                        if(key % 2 === 0) {
+                            contentHtml = contentHtml + '<tr><td class="col-xs-5"><span title="'+ propTitle +'">' + propTitle + '</span></td><td class="col-xs-5">' + this.content[propTitle] + '</td></tr>';
+                        } else {
+                            contentHtml = contentHtml + '<tr class="gray-line"><td class="col-xs-5"><span title="'+ propTitle +'">' + propTitle + '</span></td><td class="col-xs-5">' + this.content[propTitle] + '</td></tr>';
+                        }
+                        key++;
+                    }
+                }
+                contentHtml = contentHtml + '</table>';
+                this.contentHTML = contentHtml;
+            } else {
+                //传入html
+                this.contentHTML = content;
             }
-            contentHtml = contentHtml + '</table>';
-            this.contentHTML = contentHtml;
         }
-
         if ((this.contentDiv != null) &&
             (this.contentHTML != null) &&
             (this.contentHTML != this.groupDiv.innerHTML)) {
 
             this.groupDiv.innerHTML = this.contentHTML;
         }
-
     },
 
     /**

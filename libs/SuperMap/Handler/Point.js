@@ -359,6 +359,9 @@ SuperMap.Handler.Point = SuperMap.Class(SuperMap.Handler, {
      * {Boolean} Allow event propagation
      */
     mousedown: function(evt) {
+        if(evt.button === 2){
+            return;
+        }
         return this.down(evt);
     },
 

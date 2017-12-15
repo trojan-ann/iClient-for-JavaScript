@@ -16,7 +16,7 @@
             left: 20%;
             width: 79.8%;
         }
-        #stylePanel {
+        #menu {
             background: #ffffff;
             position: absolute;
             width: 19.8%;
@@ -103,7 +103,11 @@
     </script>
 </head>
 <body onLoad = "init()">
-<div id="stylePanel" title="属性面板"></div>
+<div id="menu">
+    <div class="easyui-panel" style="position:absolute;top:0px;bottom:0px;left:0px;right:0px;padding:5px; width: 100%;">
+        <div id="stylePanel" title="属性面板"></div>
+    </div>
+</div>
 <div id="map"></div>
 </body>
 </html>

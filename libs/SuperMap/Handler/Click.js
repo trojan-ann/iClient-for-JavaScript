@@ -367,7 +367,9 @@ SuperMap.Handler.Click = SuperMap.Class(SuperMap.Handler, {
      */
     passesTolerance: function(evt) {
         var passes = true;
-        if (this.pixelTolerance != null && this.down && this.down.xy) {
+        if(!this.down || !this.down.xy){
+            passes = false;
+        }else if (this.pixelTolerance != null) {
             passes = this.pixelTolerance >= this.down.xy.distanceTo(evt.xy);
             // for touch environments, we also enforce that all touches
             // start and end within the given tolerance to be considered a click

@@ -247,5 +247,8 @@ SuperMap.Lang.en = {
 	'undoStackOverflow': 'undo stack overflow',
 
 	//Mapviewer
-	'noContent':'None'
+	'noContent':'None',
+	'lableTitle': '_Lable Layer'
+
 };
+

@@ -73,7 +73,7 @@ SuperMap.Layer.Range = SuperMap.Class(SuperMap.Layer.Theme.GeoFeature, {
      * strokeWidth - {Number} 线宽度/描边宽度，默认值 1。
      * strokeLinecap - {String} 线帽样式；strokeLinecap 有三种类型 “butt", "round", "square"; 默认为"butt"。
      * strokeLineJoin - {String} 线段连接样式；strokeLineJoin 有三种类型 “miter", "round", "bevel"; 默认为"miter"。
-     * strokeDashstyle - {Sting} 虚线类型； strokeDashstyle 有八种类型 “dot",“dash",“dashot",“longdash",“longdashdot",“solid", "dashed", "dotted"; 默认值 "solid"。solid 表示实线。
+     * strokeDashstyle - {Sting} 虚线类型； strokeDashstyle 有八种类型 “dot",“dash",“dashdot",“longdash",“longdashdot",“solid", "dashed", "dotted"; 默认值 "solid"。solid 表示实线。
      * pointRadius - {Number} 点半径，默认为 6 （像素）。
      * shadowBlur - {number} 阴影模糊度，（大于 0 有效; 默认值 0）。注：请将 shadowColor 属性与 shadowBlur 属性一起使用，来创建阴影。
      * shadowColor - {string} 阴影颜色; 默认值 '#000000'。  注：请将 shadowColor 属性与 shadowBlur 属性一起使用，来创建阴影。
@@ -322,12 +322,13 @@ SuperMap.Layer.Range = SuperMap.Class(SuperMap.Layer.Theme.GeoFeature, {
             //判断属性值是否属于styleGroups的某一个范围，以便对获取分组 style
             if(isSfInAttrs){
                 for(var i = 0, len = Gro.length; i < len; i++ ){
-                    if((attr >= Gro[i].start) && (attr < Gro[i].end)){
+                    var judgeConditio = i === Gro.length-1 ? ((attr >= Gro[i].start) && (attr <= Gro[i].end)) : ((attr >= Gro[i].start) && (attr < Gro[i].end));
+                    if(judgeConditio){
                         //feature.style = SuperMap.Util.copyAttributes(feature.style, this.defaultStyle);
                         var sty1 = Gro[i].style;
                         style = SuperMap.Util.copyAttributesWithClip(style, sty1);
                     }
-                };
+                }
             }
         }
 

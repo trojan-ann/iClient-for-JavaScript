@@ -133,6 +133,9 @@
      * APIMethod: processAsync
      * 负责将客户端的设置的参数传递到服务端，与服务端完成异步通讯。
      *
+     * Parameters:
+     * credential - {<SuperMap.Credential>} 权限信息
+     *
      */
     processAsync: function(credential) {
         var me = this;

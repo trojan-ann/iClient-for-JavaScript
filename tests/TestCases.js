@@ -138,7 +138,7 @@
     inputScript("Popup/FramedCloudTest.js");
     //Protocol
     inputScript('Protocol/WFSTest.js');
-    inputScript('Protocol/HTTPTest.js');
+    //inputScript('Protocol/HTTPTest.js');
 
     //Renderer
     inputScript('Renderer/AnimatorCanvas/RadiatePointTest.js');

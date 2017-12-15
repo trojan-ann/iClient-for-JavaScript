@@ -28,7 +28,7 @@ SuperMap.REST.MeasureParameters = SuperMap.Class({
     unit: SuperMap.REST.Unit.METER,
 
     /**
-     * APIProperty: projection
+     * APIProperty: prjCoordSys
      * {String} 在 MeasureParameters 的 options 中被设置，用来指定该量算操作所使用的投影。该项默认值为空。
     */
     prjCoordSys: null,

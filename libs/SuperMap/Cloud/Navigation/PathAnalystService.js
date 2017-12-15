@@ -83,8 +83,9 @@ SuperMap.Cloud.PathAnalystService = SuperMap.Class(SuperMap.ServiceBase, {
 	 *
      * Parameters:
      * params - {Array(<SuperMap.Cloud.PathAnalystParameter>)} 分析请求参数，由 PathAnalystParameter 对象组成的数组。
+      * credential - {<SuperMap.Credential>} 权限信息
      */
-    processAsync: function(params) {
+    processAsync: function(params, credential) {
         if(!params){
             return;
         }
@@ -101,6 +102,7 @@ SuperMap.Cloud.PathAnalystService = SuperMap.Class(SuperMap.ServiceBase, {
             method: "GET",
             params: {pathAnalystParameters: JSON.stringify([params])},
             scope: me,
+            credential: credential,
             success: me.pathAnalystComplete,
             failure: me.pathAnalystError
         });

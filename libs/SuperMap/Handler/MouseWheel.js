@@ -102,7 +102,7 @@ SuperMap.Handler.MouseWheel = SuperMap.Class(SuperMap.Handler, {
      * e - {Event} 
      */
     onWheelEvent: function(e){
-        
+
         // make sure we have a map and check keyboard modifiers
         if (!this.map || !this.checkModifiers(e)) {
             return;
@@ -128,12 +128,16 @@ SuperMap.Handler.MouseWheel = SuperMap.Class(SuperMap.Handler, {
                     } else {
                         var style = 
                             document.defaultView.getComputedStyle(elem, null);
-                        var overflow = style.getPropertyValue("overflow");
+                        /*
+                        * 新版chrome Firefox 如果设置了overflowX或overflowY overflow无值在此进行判断
+                        * */
+                        var overflow = style.getPropertyValue("overflow") || style.getPropertyValue("overflow-y") || style.getPropertyValue("overflow-x");
+                        
                     }
-                    overScrollableDiv = ( overflow && 
-                        (overflow === "auto") || (overflow === "scroll") );
+                    overScrollableDiv = ( overflow &&
+                        (overflow === "auto") || (overflow === "scroll"));
                 } catch(err) {
-                    //sometimes when scrolling in a popup, this causes 
+                    //sometimes when scrolling in a popup, this causes
                     // obscure browser error
                 }
             }

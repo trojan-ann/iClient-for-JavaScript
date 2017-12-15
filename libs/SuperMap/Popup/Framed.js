@@ -166,14 +166,6 @@ SuperMap.Popup.Framed = SuperMap.Class(SuperMap.Popup.Anchored, {
         SuperMap.Popup.Anchored.prototype.destroy.apply(this, arguments);
     },
 
-    /**
-     * Method: setBackgroundColor
-     * 设置背景颜色，未实现。
-     */
-    setBackgroundColor:function(color) {
-        //does nothing since the framed popup's entire scheme is based on a 
-        // an image -- changing the background color makes no sense. 
-    },
 
     /**
      * Method: setBorder
@@ -217,7 +209,7 @@ SuperMap.Popup.Framed = SuperMap.Class(SuperMap.Popup.Anchored, {
     updateRelativePosition: function() {
 
         //update the padding
-        this.padding = this.positionBlocks[this.relativePosition].padding;
+        this.padding = this.positionBlocks? this.positionBlocks[this.relativePosition].padding: {top:0,right:0,bottom:0,left:0};
 
         //update the position of our close box to new padding
         if (this.closeDiv) {
@@ -253,8 +245,9 @@ SuperMap.Popup.Framed = SuperMap.Class(SuperMap.Popup.Anchored, {
         var newPx = SuperMap.Popup.Anchored.prototype.calculateNewPx.apply(
             this, arguments
         );
-
-        newPx = newPx.offset(this.positionBlocks[this.relativePosition].offset);
+        if(this.positionBlocks) {
+            newPx = newPx.offset(this.positionBlocks[this.relativePosition].offset);
+        }
 
         return newPx;
     },
@@ -273,7 +266,10 @@ SuperMap.Popup.Framed = SuperMap.Class(SuperMap.Popup.Anchored, {
             firstPosition = key;
             break;
         }
-        
+
+        if(!this.positionBlocks) {
+            return;
+        }
         var position = this.positionBlocks[firstPosition];
         for (var i = 0; i < position.blocks.length; i++) {
 
@@ -311,7 +307,7 @@ SuperMap.Popup.Framed = SuperMap.Class(SuperMap.Popup.Anchored, {
             this.createBlocks();
         }
         
-        if (this.size && this.relativePosition) {
+        if (this.size && this.relativePosition && this.positionBlocks) {
             //将this.relativePosition这个属性设置为tr就保持箭头方向不变了，但是弹出框的位置还需要进一步的寻找
             var position = this.positionBlocks[this.relativePosition];
             for (var i = 0; i < position.blocks.length; i++) {

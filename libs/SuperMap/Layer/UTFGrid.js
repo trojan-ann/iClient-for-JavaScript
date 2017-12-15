@@ -47,6 +47,23 @@
  *  - <SuperMap.Layer.Grid>
  */
 SuperMap.Layer.UTFGrid = SuperMap.Class(SuperMap.CanvasLayer, {
+    /**
+     * Property: originUrl
+     * {String} 保存下初始化时传进来的url，以在更新params时使用
+     */
+    originUrl:null,
+
+    /**
+     * Property: originParams
+     * {String} 保存下初始化时传进来的params，以在更新部分params时使用
+     */
+    originParams:null,
+
+    /**
+     * Property: credential
+     * {<SuperMap.Credential>} 本图层对应的权限信息
+     */
+    credential:null,
 
     /**
      * APIProperty: isBaseLayer
@@ -126,45 +143,95 @@ SuperMap.Layer.UTFGrid = SuperMap.Class(SuperMap.CanvasLayer, {
      * utfgridResolution - {Number} 瓦片像素点个数与UTFGrid单行数据点个数的比
      *  值。如果UTFGrid中的一个字符码对应表示4x4的像素块，则utfgridResolution
      *  的值为4，默认值为2。
+     *  credential - {<SuperMap.Credential>} [可选属性] utfgrid图层的权限信息
      *
      * 必须配置的属性:
      * url - {String 或 Array(String)} UTFGrid瓦片对应地图服务的url地址。
      */
     initialize: function (name, url, params, options) {
+        //可在图层上单独设置权限信息
+        if(options && options.credential && options.credential instanceof SuperMap.Credential){
+            this.credential = options.credential;
+        }
         //url.indexOf("utfGrid.json")===-1的作用是防止用户使用clone方法
         //再次对参数进行url拼接。
         if (url && url.indexOf("utfGrid.json") === -1) {
             url += "/utfGrid.json?scale=${z}&x=${x}&y=${y}";
-            if (!params.isUseCache || params.isUseCache == undefined) {
-                url += "&_cache=false";
-            }
-            if (params.utfTileSize) {
-                this.tileSize = new SuperMap.Size(params.utfTileSize, params.utfTileSize);
-                url += "&width=" + params.utfTileSize + "&height=" + params.utfTileSize;
-            }
-            if (params.pixcell) {
-                url += "&pixCell=" + params.pixcell;
-            }
-            var layerName = params.layerName;
-            if (layerName) {
-                url += "&layerNames=['" + layerName+"']";
-            }
-
-            var filter = params.filter;
-            if(filter){
-                url += '&filters=["' + filter+'"]';
-            }
-            if (SuperMap.Credential.CREDENTIAL) {
-                url += "&" + SuperMap.Credential.CREDENTIAL.name + "=" + SuperMap.Credential.CREDENTIAL.getValue();
-            }
+            this.originUrl = url;
+            this.originParams = SuperMap.Util.extend({}, params);
+            url = this.getUrlFromParams(params  || {});
             options.useCanvas = false;
             SuperMap.Layer.Grid.prototype.initialize.apply(
                 this, [name, url, params, options]
             );
         }
+
         this.tileOptions = SuperMap.Util.extend({
             utfgridResolution: this.utfgridResolution
         }, this.tileOptions);
+    },
+
+    /**
+     * Method: getUrlFromParams
+     * 通过Params来获取url
+     *
+     * Parameters:
+     * params - {Object} url参数
+     */
+    getUrlFromParams: function(params){
+        if(!params){
+            return;
+        }
+        var url = this.originUrl;
+        if (!params.isUseCache || params.isUseCache == undefined) {
+            url += "&_cache=false";
+        }
+        if (params.utfTileSize) {
+            this.tileSize = new SuperMap.Size(params.utfTileSize, params.utfTileSize);
+            url += "&width=" + params.utfTileSize + "&height=" + params.utfTileSize;
+        }
+        if (params.pixcell) {
+            url += "&pixCell=" + params.pixcell;
+        }
+        var layerName = params.layerName;
+        if (layerName) {
+            url += "&layerNames=['" + layerName+"']";
+        }
+
+        var filter = params.filter;
+        if(filter){
+            url += '&filters=["' + filter+'"]';
+        }
+        if ( (this.credential && this.credential instanceof SuperMap.Credential) || SuperMap.Credential.CREDENTIAL) {
+            var credential = this.credential || SuperMap.Credential.CREDENTIAL;
+            url += "&" + credential.name + "=" + credential.getValue();
+        }
+        return url;
+    },
+
+    /**
+     * APIMethod: updateParams
+     * 更新params属性，并重绘图层。
+     * 备注：可以只提供需要修改的属性，不需要修改的属性会使用初始化时传递进来值或者上一次更新的值
+     *
+     * Parameters:
+     * params - {Object} 请求url相应的参数
+     */
+    updateParams: function(params){
+        if(!params){
+            return;
+        }
+        var hasChanged = false;
+        for(attr in params){
+            if(this.originParams[attr] !== params[attr]){
+                this.originParams[attr] = params[attr];
+                hasChanged = true;
+            }
+        }
+        if(hasChanged){
+            this.url = this.getUrlFromParams(this.originParams);
+            this.redraw();
+        }
     },
 
     /**

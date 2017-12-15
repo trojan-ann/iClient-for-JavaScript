@@ -100,7 +100,7 @@ SuperMap.Layer.Theme.GeoFeature = SuperMap.Class(SuperMap.Layer.Theme, {
      * strokeWidth - {Number} 线宽度/描边宽度，默认值 1。
      * strokeLinecap - {String} 线帽样式；strokeLinecap 有三种类型 “butt", "round", "square"; 默认为"butt"。
      * strokeLineJoin - {String} 线段连接样式；strokeLineJoin 有三种类型 “miter", "round", "bevel"; 默认为"miter"。
-     * strokeDashstyle - {Sting} 虚线类型； strokeDashstyle 有八种类型 “dot",“dash",“dashot",“longdash",“longdashdot",“solid", "dashed", "dotted"; 默认值 "solid"。solid 表示实线。
+     * strokeDashstyle - {Sting} 虚线类型； strokeDashstyle 有八种类型 “dot",“dash",“dashdot",“longdash",“longdashdot",“solid", "dashed", "dotted"; 默认值 "solid"。solid 表示实线。
      * pointRadius - {Number} 点半径，默认为 6 （像素）。
      * shadowBlur - {number} 阴影模糊度，（大于 0 有效; 默认值 0）。注：请将 shadowColor 属性与 shadowBlur 属性一起使用，来创建阴影。
      * shadowColor - {string} 阴影颜色; 默认值 '#000000'。  注：请将 shadowColor 属性与 shadowBlur 属性一起使用，来创建阴影。
@@ -270,7 +270,7 @@ SuperMap.Layer.Theme.GeoFeature = SuperMap.Class(SuperMap.Layer.Theme, {
 
             //剔除当前视图（地理）范围以外的数据
             if(bounds){
-                if(!bounds.intersectsBounds(feaBounds)) continue;
+                if(!feaBounds || !bounds.intersectsBounds(feaBounds)) continue;
             }
 
             //缓存字段

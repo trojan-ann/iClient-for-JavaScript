@@ -73,27 +73,28 @@ SuperMap.Plotting.StylePanel = new SuperMap.Class({
                 if(me.selectFeatures ===null){
                     return;
                 }
-
-                for(var i=0;i<me.selectFeatures.length;i++){
-                    if(me.selectFeatures[i].layer.renderer.CLASS_NAME === "SuperMap.Renderer.PlotCanvas2"){
-                        me.selectFeatures[i].layer.redraw();
-                    } else {
-                        me.selectFeatures[i].layer.drawFeature(me.selectFeatures[i]);
+                if(updated[0].name == "对象可见性"){
+                    while(me.selectFeatures.length !== 0){
+                        me.selectFeatures[0].layer.drawFeature(me.selectFeatures[0]);
                     }
-
-                    //if(me.selectFeatures[i] !==null && me.selectFeatures[i].graphicsLayer !== undefined){
-                    //    me.selectFeatures[i].graphicsLayer.updateGraphics(me.selectFeatures[i]);
-                    //}
-                    if(me.selectFeatures[i] !==undefined ){
-                        if(me.selectFeatures[i].graphicsLayer !== undefined){
-                            me.selectFeatures[i].graphicsLayer.updateGraphics(me.selectFeatures[i]);
+                }else{
+                    for(var i=0;i<me.selectFeatures.length;i++){
+                        if(me.selectFeatures[i].layer.renderer.CLASS_NAME === "SuperMap.Renderer.PlotCanvas2"){
+                            me.selectFeatures[i].layer.redraw();
+                        }else{
+                            me.selectFeatures[i].layer.drawFeature(me.selectFeatures[i]);
                         }
 
+                        if(me.selectFeatures[i] !==undefined ){
+                            if(me.selectFeatures[i].graphicsLayer !== undefined){
+                                me.selectFeatures[i].graphicsLayer.updateGraphics(me.selectFeatures[i]);
+                            }
+                        }
                     }
-
                 }
 
-                var  rows = me.collectionPropertyGridRows(SF);
+
+                var  rows = me.collectionPropertyGridRows(me.selectFeatures);
                 $('#pg').propertygrid('loadData', rows);
 
             }
@@ -636,11 +637,6 @@ SuperMap.Plotting.StylePanel = new SuperMap.Class({
 
 
 
-
-            //if(this.checkType(selectfeature)===true){
-            //    rows.push(visibilityObj);
-            //}
-
             if(!(selectfeature.geometry instanceof SuperMap.Geometry.GeoRouteNode || selectfeature.geometry instanceof SuperMap.Geometry.GeoLiterateSign)){
 
                     rows.push(visibilityObj);
@@ -692,21 +688,28 @@ SuperMap.Plotting.StylePanel = new SuperMap.Class({
                     selectfeature.geometry.symbolType === SuperMap.Plot.SymbolType.LINEMARKING
                 ) {
                     rows.push(textBoxTypeObj);
-                    rows.push(roundBoxObj);
+                    if (selectfeature.geometry.symbolType === SuperMap.Plot.SymbolType.SYMBOLTEXTBOX){
+                        rows.push(roundBoxObj);
+                    }
                 }
 
-                if (selectfeature.geometry.symbolType === SuperMap.Plot.SymbolType.DOTSYMBOL ||
-                    selectfeature.geometry.symbolType === SuperMap.Plot.SymbolType.TEXTSYMBOL ||
-                    selectfeature.geometry.symbolType === SuperMap.Plot.SymbolType.ANNOFRAMESYMBOL ||
-                    selectfeature.geometry.symbolType === SuperMap.Plot.SymbolType.ANNOFRAMESYMBOLM ||
-                    selectfeature.geometry.symbolType === SuperMap.Plot.SymbolType.PATHTEXT ||
-                    selectfeature.geometry.symbolType === SuperMap.Plot.SymbolType.SYMBOLTEXTBOX ||
-                    selectfeature.geometry.symbolType === SuperMap.Plot.SymbolType.POLYGONREGION ||
-                    selectfeature.geometry.symbolType === SuperMap.Plot.SymbolType.ARCREGION ||
-                    selectfeature.geometry.symbolType === SuperMap.Plot.SymbolType.SATELLITE ||
-                    selectfeature.geometry.symbolType === SuperMap.Plot.SymbolType.SYMBOLTEXT ||
-                    selectfeature.geometry.symbolType === SuperMap.Plot.SymbolType.SYMBOLTEXT1 ||
-                    selectfeature.geometry.symbolType === SuperMap.Plot.SymbolType.LINEMARKING) {
+
+                if (!(selectfeature.geometry instanceof SuperMap.Geometry.GeoRouteNode ||
+                    selectfeature.geometry instanceof SuperMap.Geometry.GeoLiterateSign ||
+                    selectfeature.geometry instanceof SuperMap.Geometry.GroupObject) &&
+                    selectfeature.geometry.symbolType !== SuperMap.Plot.SymbolType.ALGOSYMBOL &&
+                    selectfeature.geometry.symbolType !== SuperMap.Plot.SymbolType.BRACESYMBOL &&
+                    selectfeature.geometry.symbolType !== SuperMap.Plot.SymbolType.LINERELATION &&
+                    selectfeature.geometry.symbolType !== SuperMap.Plot.SymbolType.INTERFERENCEBEAM &&
+                    selectfeature.geometry.symbolType !== SuperMap.Plot.SymbolType.SATELLITETIMEWINDOWS &&
+                    selectfeature.geometry.symbolType !== SuperMap.Plot.SymbolType.RUNWAY &&
+                    selectfeature.geometry.symbolType !== SuperMap.Plot.SymbolType.CURVEEIGHT &&
+                    selectfeature.geometry.symbolType !== SuperMap.Plot.SymbolType.ARROWLINE &&
+                    selectfeature.geometry.symbolType !== SuperMap.Plot.SymbolType.CONCENTRICCIRCLE &&
+                    selectfeature.geometry.symbolType !== SuperMap.Plot.SymbolType.COMBINATIONALCIRCLE &&
+                    selectfeature.geometry.symbolType !== SuperMap.Plot.SymbolType.FREECURVE &&
+                    selectfeature.geometry.symbolType !== SuperMap.Plot.SymbolType.NODECHAIN &&
+                    selectfeature.geometry.symbolType !== SuperMap.Plot.SymbolType.AVOIDREGION) {
 
                     rows.push(textContentObj);
                     rows.push(fontSizeObj);
@@ -790,17 +793,9 @@ SuperMap.Plotting.StylePanel = new SuperMap.Class({
                     if(selectfeature.geometry.code === 1025 && selectfeature.geometry.getSubSymbols().length > 0){
                         var objectLibID = new Object();
                         objectLibID.name = "LibID";
-                        // if(selectfeature.geometry.getSubSymbols().length > 0){
-                            // objectLibID.value = selectfeature.geometry.getSubSymbols()[0].libID;
-                            objectLibID.value = this.libIDToString(selectfeature.geometry.getSubSymbols()[0].libID);
-                        // }
-                        // else{
-                        //     objectLibID.value = null;
-                        // }
-
+                        objectLibID.value = this.libIDToString(selectfeature.geometry.getSubSymbols()[0].libID);
                         objectLibID.group = this.group[5];
                         objectLibID.editor = "text";
-                        // objectLibID.editor = { "type": 'combobox', "options": { "valueField": 'value', "textField": 'text', "data": libIDRows }};
                         rows.push(objectLibID);
                     }
 
@@ -1116,8 +1111,6 @@ SuperMap.Plotting.StylePanel = new SuperMap.Class({
                     selectfeatures[i].geometry.setPositionOffset(this.fromCheckboxValue(updated.value));
                     break;
                 case this.displayName[7]:
-                    //selectfeature.geometry.positionOffsetType = parseInt(updated.value);
-                    //selectfeature.geometry.calculateParts();
                     selectfeatures[i].geometry.setPositionOffsetType(parseInt(updated.value));
                     break;
                 case this.displayName[8]:
@@ -1141,8 +1134,6 @@ SuperMap.Plotting.StylePanel = new SuperMap.Class({
                     break;
                 case this.displayTextContentName[1]:
                     if (selectfeatures[i].geometry.symbolType === SuperMap.Plot.SymbolType.PATHTEXT) {
-                        //selectfeature.geometry.relLineText = parseInt(updated.value);
-                        //selectfeature.geometry.calculateParts();
                         selectfeatures[i].geometry.setRelLineText(parseInt(updated.value));
                     } else {
                         selectfeatures[i].geometry.setTextPosition(parseInt(updated.value));
@@ -1161,23 +1152,15 @@ SuperMap.Plotting.StylePanel = new SuperMap.Class({
                     if(selectfeatures[i].geometry.symbolType === SuperMap.Plot.SymbolType.SYMBOLTEXT){
                         selectfeatures[i].geometry.applyStyle("fontColor");
                     }
-                    //selectfeature.geometry.calculateParts();
                     break;
                 case this.displayTextContentName[4]:
                     selectfeatures[i].style.fontFamily = updated.value;
                     if(selectfeatures[i].geometry.symbolType === SuperMap.Plot.SymbolType.SYMBOLTEXT){
                         selectfeatures[i].geometry.applyStyle("fontFamily");
                     }
-                    //selectfeature.geometry.calculateParts();
                     break;
                 case this.displayTextContentName[5]:
                     selectfeatures[i].geometry.setSpace(parseInt(updated.value));
-                    //if (selectfeature.geometry.code !== 1017) {
-                    //    selectfeature.geometry.space = parseInt(updated.value);
-                    //} else {
-                    //    selectfeature.geometry.textToLineDistance = parseInt(updated.value);
-                    //}
-                    //selectfeature.geometry.calculateParts();
                     break;
                 case this.displayLineStyleName[0]:
                     if (selectfeatures[i].geometry instanceof SuperMap.Geometry.GroupObject) {
@@ -1187,7 +1170,6 @@ SuperMap.Plotting.StylePanel = new SuperMap.Class({
                         selectfeatures[i].style.strokeWidth = parseInt(updated.value);
                         if(selectfeatures[i].geometry.symbolType === SuperMap.Plot.SymbolType.SYMBOLTEXT){
                             selectfeatures[i].geometry.applyStyle("strokeWidth");
-                            //selectfeature.geometry.calculateParts();
                         }
                     }
                     break;
@@ -1199,7 +1181,6 @@ SuperMap.Plotting.StylePanel = new SuperMap.Class({
                         selectfeatures[i].style.strokeColor = updated.value;
                         if(selectfeatures[i].geometry.symbolType === SuperMap.Plot.SymbolType.SYMBOLTEXT){
                             selectfeatures[i].geometry.applyStyle("strokeColor");
-                            //selectfeature.geometry.calculateParts();
                         }
                         if(selectfeatures[i].geometry.symbolType === SuperMap.Plot.SymbolType.LITERATESIGN){
                             selectfeatures[i].geometry.route.applyTextStyle(selectfeatures[i].style);
@@ -1214,7 +1195,6 @@ SuperMap.Plotting.StylePanel = new SuperMap.Class({
                     selectfeatures[i].style.strokeOpacity = opacity;
                     if(selectfeatures[i].geometry.symbolType === SuperMap.Plot.SymbolType.SYMBOLTEXT){
                         selectfeatures[i].geometry.applyStyle("strokeOpacity");
-                        //selectfeature.geometry.calculateParts();
                     }
                 }
                     break;
@@ -1222,7 +1202,6 @@ SuperMap.Plotting.StylePanel = new SuperMap.Class({
                     selectfeatures[i].style.strokeDashstyle = updated.value;
                     if(selectfeatures[i].geometry.symbolType === SuperMap.Plot.SymbolType.SYMBOLTEXT){
                         selectfeatures[i].geometry.applyStyle("strokeDashstyle");
-                        //selectfeature.geometry.calculateParts();
                     }
                     break;
                 case this.displaySurroundLineName[0]:
@@ -1245,14 +1224,12 @@ SuperMap.Plotting.StylePanel = new SuperMap.Class({
                     selectfeatures[i].style.fill = this.fromCheckboxValue(updated.value);
                     if(selectfeatures[i].geometry.symbolType === SuperMap.Plot.SymbolType.SYMBOLTEXT){
                         selectfeatures[i].geometry.applyStyle("fill");
-                        //selectfeature.geometry.calculateParts();
                     }
                     break;
                 case this.displayFillStyleName[1]:
                     selectfeatures[i].style.fillColor = updated.value;
                     if(selectfeatures[i].geometry.symbolType === SuperMap.Plot.SymbolType.SYMBOLTEXT){
                         selectfeatures[i].geometry.applyStyle("fillColor");
-                        //selectfeature.geometry.calculateParts();
                     }
                     break;
                 case this.displayFillStyleName[2]:
@@ -1262,7 +1239,6 @@ SuperMap.Plotting.StylePanel = new SuperMap.Class({
                     selectfeatures[i].style.fillOpacity = opacity;
                     if(selectfeatures[i].geometry.symbolType === SuperMap.Plot.SymbolType.SYMBOLTEXT){
                         selectfeatures[i].geometry.applyStyle("fillOpacity");
-                        //selectfeature.geometry.calculateParts();
                     }
                 }
                     break;
@@ -1270,14 +1246,12 @@ SuperMap.Plotting.StylePanel = new SuperMap.Class({
                     selectfeatures[i].style.fillGradientMode = updated.value;
                     if(selectfeatures[i].geometry.symbolType === SuperMap.Plot.SymbolType.SYMBOLTEXT){
                         selectfeatures[i].geometry.applyStyle("fillGradientMode");
-                        //selectfeature.geometry.calculateParts();
                     }
                     break;
                 case this.displayFillStyleName[4]:
                     selectfeatures[i].style.fillBackColor = updated.value;
                     if(selectfeatures[i].geometry.symbolType === SuperMap.Plot.SymbolType.SYMBOLTEXT){
                         selectfeatures[i].geometry.applyStyle("fillBackColor");
-                        //selectfeature.geometry.calculateParts();
                     }
                     break;
                 case this.displayFillStyleName[5]:
@@ -1287,7 +1261,6 @@ SuperMap.Plotting.StylePanel = new SuperMap.Class({
                     selectfeatures[i].style.fillBackOpacity = opacity;
                     if(selectfeatures[i].geometry.symbolType === SuperMap.Plot.SymbolType.SYMBOLTEXT){
                         selectfeatures[i].geometry.applyStyle("fillBackOpacity");
-                        //selectfeature.geometry.calculateParts();
                     }
                 }
                     break;
@@ -1325,101 +1298,63 @@ SuperMap.Plotting.StylePanel = new SuperMap.Class({
                     selectfeatures[i].style.fontPercent = parseInt(updated.value);
                     break;
                 case this.displayNameNew[0]:
-                    //selectfeature.geometry.arrowHeadType = parseInt(updated.value);
-                    //selectfeature.geometry.calculateParts();
                     selectfeatures[i].geometry.setStartArrowType(parseInt(updated.value));
                     break;
                 case this.displayNameNew[1]:
                     selectfeatures[i].geometry.setEndArrowType(parseInt(updated.value));
-                    //selectfeature.geometry.arrowTailType = parseInt(updated.value);
-                    //selectfeature.geometry.calculateParts();
                     break;
                 case this.displayNameNew[2]:
-                    //selectfeature.geometry.isAvoid = this.fromCheckboxValue(updated.value);
-                    //selectfeature.geometry.calculateParts();
                     selectfeatures[i].geometry.setAvoidLine(this.fromCheckboxValue(updated.value));
                     break;
                 case this.displayNameNew[3]:
-                    //selectfeature.geometry.showPathLine = this.fromCheckboxValue(updated.value);
-                    //selectfeature.geometry.calculateParts();
                     selectfeatures[i].geometry.setShowPathLine(this.fromCheckboxValue(updated.value));
                     break;
                 case this.displayNameNew[4]:
-                    //selectfeature.geometry.isCurve = this.fromCheckboxValue(updated.value);
-                    //selectfeature.geometry.calculateParts();
                     selectfeatures[i].geometry.setCurveLine(this.fromCheckboxValue(updated.value));
                     break;
                 case this.displayNameNew[5]:
-                    //selectfeature.geometry.radiusLineType = parseInt(updated.value);
-                    //selectfeature.geometry.calculateParts();
                     selectfeatures[i].geometry.setRadiusLineType(parseInt(updated.value));
                     break;
                 case this.displayNameNew[6]:
-                    //selectfeature.geometry.radiusText[0] = updated.value;
-                    //selectfeature.geometry.calculateParts();
                     selectfeatures[i].geometry.setRadiusText(updated.value, 0);
                     break;
                 case this.displayNameNew[7]:
-                    //selectfeature.geometry.radiusText[1] = updated.value;
-                    //selectfeature.geometry.calculateParts();
                     selectfeatures[i].geometry.setRadiusText(updated.value, 1);
                     break;
                 case this.displayNameNew[15]:
-                    //selectfeature.geometry.radiusPosAngle = updated.value;
-                    //selectfeature.geometry.calculateParts();
                     selectfeatures[i].geometry.setRadiusTextPos(updated.value);
                     break;
                 case this.displayNameNew[8]:
-                    //selectfeature.geometry.visible = this.fromCheckboxValue(updated.value);
-                    //selectfeature.geometry.calculateParts();
                     selectfeatures[i].geometry.setVisible(this.fromCheckboxValue(updated.value));
                     break;
                 case this.displayNameNew[9]:
                     selectfeatures[i].geometry.setType(updated.value);
                     break;
                 case this.displayNameNew[10]:
-                    //selectfeature.geometry.routeNode.rotate = parseFloat(updated.value);
-                    //selectfeature.geometry.calculateParts();
                     selectfeatures[i].geometry.setRotate(parseFloat(updated.value));
                     break;
                 case this.displayNameNew[11]:
-                    //selectfeature.geometry.textBoxType = parseInt(updated.value);
-                    //selectfeature.geometry.calculateParts();
                     selectfeatures[i].geometry.setTextBoxType(parseInt(updated.value));
                     break;
                 case this.displayNameNew[12]:
-                    //selectfeature.geometry.addFrame=this.fromCheckboxValue(updated.value);
-                    //selectfeature.geometry.calculateParts();
                     selectfeatures[i].geometry.setRoundBox(this.fromCheckboxValue(updated.value));
                     break;
                 case this.displayNameNew[13]:
-                    //selectfeature.geometry.showPathLineArrow = this.fromCheckboxValue(updated.value);
-                    //selectfeature.geometry.calculateParts();
                     selectfeatures[i].geometry.setShowPathLineArrow(this.fromCheckboxValue(updated.value));
                     break;
                 case this.displayNameNew[14]:
-                    //selectfeature.geometry.addFrame=this.fromCheckboxValue(updated.value);
-                    //selectfeature.geometry.calculateParts();
                     selectfeatures[i].geometry.setFrame(this.fromCheckboxValue(updated.value));
                     break;
                 case "箭头":
-                    //selectfeature.geometry.arrowHeadType=parseInt(updated.value);
-                    //selectfeature.geometry.calculateParts();
                     selectfeatures[i].geometry.setArrowHeadType(parseInt(updated.value));
                     break;
                 case "箭身":
-                    //selectfeature.geometry.arrowBodyType=parseInt(updated.value);
-                    //selectfeature.geometry.calculateParts();
                     selectfeatures[i].geometry.setArrowBodyType(parseInt(updated.value));
                     break;
                 case "箭尾":
-                    //selectfeature.geometry.arrowTailType=parseInt(updated.value);
-                    //selectfeature.geometry.calculateParts();
                     selectfeatures[i].geometry.setArrowTailType(parseInt(updated.value));
                     break;
                 case this.displayNameNew[16]:
-                    //selectfeature.geometry.lineRelationType = parseInt(updated.value);
-                    //selectfeature.geometry.calculateParts();
                     selectfeatures[i].geometry.setLineRelationType(parseInt(updated.value));
                     break;
 
@@ -1434,6 +1369,7 @@ SuperMap.Plotting.StylePanel = new SuperMap.Class({
                 if (updated.name == "Code") {
                     var code = parseInt(updated.value);
                     if(selectfeatures[i].geometry.symbolType === SuperMap.Plot.SymbolType.NODECHAIN && code != null) {
+                        var symbolLibManager = plotting.getSymbolLibManager();
                         var subCode = symbolLibManager.findSymbolByCode(code);
                         if(subCode.length !== 0 && subCode[0].symbolType === "SYMBOL_DOT"){
                             selectfeatures[i].geometry.setSubSymbol(code, updated.index, subCode[0].libID);
@@ -1445,8 +1381,9 @@ SuperMap.Plotting.StylePanel = new SuperMap.Class({
                 }
             }
         }
+         
+                SuperMap.Plot.AnalysisSymbol.setStyle(selectfeatures[i].style, selectfeatures[i].geometry.symbolData);
 
-        SuperMap.Plot.AnalysisSymbol.setStyle(selectfeatures[i].style, selectfeatures[i].geometry.symbolData);
         }
     },
 

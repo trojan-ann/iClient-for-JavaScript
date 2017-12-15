@@ -66,7 +66,7 @@ SuperMap.Strategy.GeoText = SuperMap.Class(SuperMap.Strategy, {
      *
      * strokeLinecap - {String} strokeLinecap有三种类型 butt，round，square，默认为"round"。
      *
-     * strokeDashstyle - {String} 有dot, dash, dashot, longdash, longdashdot, solid几种样式，默认为"solid"。
+     * strokeDashstyle - {String} 有dot, dash, dashdot, longdash, longdashdot, solid几种样式，默认为"solid"。
      **/
     style: null,
 
@@ -1243,7 +1243,14 @@ SuperMap.Strategy.GeoText = SuperMap.Class(SuperMap.Strategy, {
 
         if(!this.layer) return;
         this.layer.renderer.locked = true;
-        for (var i=0, len=labels.length; i<len; i++) {
+        var len=labels.length;
+        //处理文本型的要素在最上层且当前视图范围内没有文本的情况。
+        if(len === 0){
+            this.layer.renderer.locked = false;
+            this.layer.drawFeature({}, undefined, {isNewAdd: true});
+            return;
+        }
+        for (var i=0; i<len; i++) {
             if (i === (len - 1)) {
                 this.layer.renderer.locked = false;
             }
@@ -1283,7 +1290,7 @@ SuperMap.Strategy.GeoText = SuperMap.Class(SuperMap.Strategy, {
          */
         layer.drawFeature = function(feature, style, option) {
             //不绘制GeoText
-            if(feature.geometry.CLASS_NAME === "SuperMap.Geometry.GeoText"){
+            if(feature.geometry && feature.geometry.CLASS_NAME === "SuperMap.Geometry.GeoText"){
                 return true;
             }
             else{
@@ -1304,9 +1311,11 @@ SuperMap.Strategy.GeoText = SuperMap.Class(SuperMap.Strategy, {
 
             //添加标签
             var labFeas = strategy.setlabelsStyle(layer.features);
+            if (!layer.drawn) {
+                return;
+            }
             var labels = strategy.getDrawnLabels(labFeas);
-            strategy.addLabels(labels);
-
+            labels && strategy.addLabels(labels);
             //设置图层手势
             if ((layer.renderer.CLASS_NAME === "SuperMap.Renderer.SVG") || (layer.renderer.CLASS_NAME === "SuperMap.Renderer.VML")) {
                 layer.renderer.vectorRoot.style.cursor="pointer";

@@ -12,6 +12,11 @@
  * 绘制要素的鼠标事件的事件处理器。回调函数中定义的与绘制要素相关的如下事件：click, clickout, over, out 和 dblclick等，会在对应操作完成后得到触发通知。
  */
 SuperMap.Handler.Feature = SuperMap.Class(SuperMap.Handler, {
+    /**
+     * APIProperty: delay
+     * {Number} 两次单击事件的最小间隔毫秒数，间隔小于该值则认为是双击事件。
+     */
+    delay: 300,
 
     /**
      * Property: EVENTMAP
@@ -27,6 +32,47 @@ SuperMap.Handler.Feature = SuperMap.Class(SuperMap.Handler, {
         'touchstart': {'in': 'click', 'out': 'clickout'},
         'contextmenu': {'in': 'rightclick', 'out': null}
     },
+
+    /**
+     * APIProperty: single
+     * {Boolean} 单击事件，默认为 true。
+     */
+    single: true,
+
+    /**
+     * APIProperty: double
+     * {Boolean} 双击事件,默认为 true。
+     */
+    'double': true,
+
+    /**
+     * Property: timerId
+     * {Number} The id of the timeout waiting to clear the <delayedCall>.
+     */
+    timerId: null,
+
+    /**
+     * Property: touch
+     * {Boolean} When a touchstart event is fired, touch will be true and all
+     *     mouse related listeners will do nothing.
+     */
+    touch: false,
+
+    /**
+     * Property: last
+     * {Object} Object that store relevant information about the last
+     *     mousemove or touchmove. Its 'xy' SuperMap.Pixel property gives
+     *     the average location of the mouse/touch event. Its 'touches'
+     *     property records clientX/clientY of each touches.
+     */
+    last: null,
+
+    /**
+     * Property: first
+     * {Object} When waiting for double clicks, this object will store
+     *     information about the first click in a two click sequence.
+     */
+    first: null,
 
     /**
      * Property: feature
@@ -189,19 +235,147 @@ SuperMap.Handler.Feature = SuperMap.Class(SuperMap.Handler, {
         return this.handle(evt) ? !this.stopUp : true;
     },
 
+
     /**
      * Method: click
-     * Handle click.  Call the "click" callback if click on a feature,
-     *     or the "clickout" callback if click outside any feature.
-     * 
-     * Parameters:
-     * evt - {Event} 
+     * Handle click events from the browser.  This is registered as a listener
+     *     for click events and should not be called from other events in this
+     *     handler.
      *
      * Returns:
-     * {Boolean}
+     * {Boolean} Continue propagating this event.
      */
     click: function(evt) {
-        return this.handle(evt) ? !this.stopClick : true;
+        if (!this.last) {
+            this.last = this.getEventInfo(evt);
+        }
+        return this.handleSingle(evt) ? !this.stopClick : true;
+    },
+
+    /**
+     * Method: dblclick
+     * Handle dblclick.  For a dblclick, we get two clicks in some browsers
+     *     (FF) and one in others (IE).  So we need to always register for
+     *     dblclick to properly handle single clicks.  This method is registered
+     *     as a listener for the dblclick browser event.  It should *not* be
+     *     called by other methods in this handler.
+     *
+     * Returns:
+     * {Boolean} Continue propagating this event.
+     */
+    dblclick: function(evt) {
+        return this.handleDouble(evt);
+    },
+
+    /**
+     * Method: handleDouble
+     * Handle double-click sequence.
+     */
+    handleDouble: function(evt) {
+        if (this["double"]) {
+            evt.type = 'dblclick';
+            return !this.handle(evt);
+            //this.callback("dblclick", [evt]);
+        }
+    },
+
+    /**
+     * Method: handleSingle
+     * Handle single click sequence.
+     */
+    handleSingle: function(evt) {
+        if (this.timerId != null) {
+            // already received a click
+            if (this.last.touches && this.last.touches.length === 1) {
+                // touch device, no dblclick event - this may be a double
+                if (this["double"]) {
+                    // on Android don't let the browser zoom on the page
+                    SuperMap.Event.stop(evt);
+                }
+                this.handleDouble(evt);
+            }
+            // if we're not in a touch environment we clear the click timer
+            // if we've got a second touch, we'll get two touchend events
+            if (!this.last.touches || this.last.touches.length !== 2) {
+                this.clearTimer();
+            }
+        } else {
+            // remember the first click info so we can compare to the second
+            this.first = this.getEventInfo(evt);
+            // set the timer, send evt only if single is true
+            //use a clone of the event object because it will no longer
+            //be a valid event object in IE in the timer callback
+            var clickEvent = this.single ?
+                SuperMap.Util.extend({}, evt) : null;
+            this.queuePotentialClick(clickEvent);
+        }
+    },
+
+    /**
+     * Method: queuePotentialClick
+     * This method is separated out largely to make testing easier (so we
+     *     don't have to override window.setTimeout)
+     */
+    queuePotentialClick: function(evt) {
+        this.timerId = window.setTimeout(
+            SuperMap.Function.bind(this.delayedCall, this, evt),
+            this.delay
+        );
+    },
+
+    /**
+     * Method: delayedCall
+     * Sets <timerId> to null.  And optionally triggers the click callback if
+     *     evt is set.
+     */
+    delayedCall: function(evt) {
+        this.timerId = null;
+        if (evt) {
+            return this.handle(evt) ? !this.stopClick : true;
+        }
+    },
+
+    /**
+     * Method: clearTimer
+     * Clear the timer and set <timerId> to null.
+     */
+    clearTimer: function() {
+        if (this.timerId != null) {
+            window.clearTimeout(this.timerId);
+            this.timerId = null;
+        }
+        if (this.rightclickTimerId != null) {
+            window.clearTimeout(this.rightclickTimerId);
+            this.rightclickTimerId = null;
+        }
+    },
+    /**
+     * Method: getEventInfo
+     * This method allows us to store event information without storing the
+     *     actual event.  In touch devices (at least), the same event is
+     *     modified between touchstart, touchmove, and touchend.
+     *
+     * Returns:
+     * {Object} An object with event related info.
+     */
+    getEventInfo: function(evt) {
+        var touches;
+        if (evt.touches) {
+            var len = evt.touches.length;
+            touches = new Array(len);
+            var touch;
+            for (var i=0; i<len; i++) {
+                touch = evt.touches[i];
+                touches[i] = {
+                    clientX: touch.clientX,
+                    clientY: touch.clientY
+                };
+            }
+        }
+        return {
+            xy: evt.xy,
+            touches: touches
+        };
     },
         
     /**
@@ -239,20 +413,6 @@ SuperMap.Handler.Feature = SuperMap.Class(SuperMap.Handler, {
         }     
         this.handle(evt);
         return true;
-    },
-    
-    /**
-     * Method: dblclick
-     * Handle dblclick.  Call the "dblclick" callback if dblclick on a feature.
-     *
-     * Parameters:
-     * evt - {Event} 
-     *
-     * Returns:
-     * {Boolean}
-     */
-    dblclick: function(evt) {
-        return !this.handle(evt);
     },
 
     /**

@@ -30,12 +30,24 @@ SuperMap.Layer.CloudLayer = SuperMap.Class(SuperMap.CanvasLayer, {
      * {String} 图层标识名称，默认为：CloudLayer。
      */
     name: "CloudLayer",
-    
+
+    /**
+     * APIProperty: version
+     * {String} 云地图的版本，目前有 'v1','v2','v3'三个版本，默认为'v2'
+     */
+    version: 'v2',
+
     /**
      * Property: url
      * {String} 地图资源地址。默认为：http://t2.supermapcloud.com/FileService/image
      */
     url: 'http://t2.supermapcloud.com/FileService/image',
+
+    urls:{
+        v1:'http://t1.supermapcloud.com/FileService/image',
+        v2:'http://t2.supermapcloud.com/FileService/image',
+        v3:'http://t3.supermapcloud.com/MapService/getGdp'
+    },
     
     /**
      * APIProperty: attribution
@@ -71,8 +83,14 @@ SuperMap.Layer.CloudLayer = SuperMap.Class(SuperMap.CanvasLayer, {
     initialize: function (options) {
         var me = this;
         this.attribution = SuperMap.i18n("supermap_cloud_map");
+        if(options && options.version && this.urls.hasOwnProperty(options.version)){
+            this.version = options.version;
+        }
+        if(options && options.name){
+            this.name = options.name;
+        }
         //me.url = me.url + '?map=${mapName}&type=${type}&x=${x}&y=${y}&z=${z}';
-        me.changeURL(me.url);
+        me.changeURL(this.version);
         //超图云只有一个开放的出图地址，投影为墨卡托投影，所以maxExtent和resolutions可以直接设置好
         options = SuperMap.Util.extend({
             maxExtent: new SuperMap.Bounds(
@@ -100,6 +118,8 @@ SuperMap.Layer.CloudLayer = SuperMap.Class(SuperMap.CanvasLayer, {
         }, options);
         SuperMap.CanvasLayer.prototype.initialize.apply(me, [me.name, me.url, null, options]);
         me.units = "meter";
+        //投影从非官方的900913改为3857，以便量算时，可以模拟使用未偏移的3857模拟偏移的火星坐标，算出相对准确的结果
+        me.projection = "EPSG:3857";
     },
 
     /**
@@ -107,10 +127,15 @@ SuperMap.Layer.CloudLayer = SuperMap.Class(SuperMap.CanvasLayer, {
      * 更改URL，默认为：http://t2.supermapcloud.com/FileService/image。
      * @param url
      */
-    changeURL: function(url){
-       if(url){
-           this.url += '?map=${mapName}&type=${type}&x=${x}&y=${y}&z=${z}';
-       }
+    changeURL: function(version){
+        var url = this.urls[version];
+        if(url){
+            if(version === 'v3'){
+                this.url =  url + '?&x=${x}&y=${y}&z=${z}';
+            }else{
+                this.url =  url + '?map=${mapName}&type=${type}&x=${x}&y=${y}&z=${z}';
+            }
+        }
     },
     
     /**
@@ -138,8 +163,7 @@ SuperMap.Layer.CloudLayer = SuperMap.Class(SuperMap.CanvasLayer, {
     clone: function (obj) {
         var me = this;
         if (obj == null) {
-            obj = new SuperMap.Layer.CloudLayer(
-                me.name, me.url, me.layerName, me.getOptions());
+            obj = new SuperMap.Layer.CloudLayer(me.getOptions());
         }
        
         obj = SuperMap.CanvasLayer.prototype.clone.apply(me, [obj]);

@@ -111,8 +111,8 @@ SuperMap.Control.SelectGraphic = SuperMap.Class(SuperMap.Control, {
       *     click: function(currentGraphic){//todo},
       *     clickout: function(lastGraphic){//todo},
       * };
-      * var vectorLayer = new SuperMap.Layer.Vector();
-      * var selectGraphic = new SuperMap.Control.SelectGraphic(vectorLayer, {
+      * var graphicLayer = new SuperMap.Layer.Graphics("Graphic Layer", null, {hitDetection: true, useCanvasEvent: false});
+      * var selectGraphic = new SuperMap.Control.SelectGraphic(graphicLayer, {
       *     onSelect: onGraphicSelected,
       *     callbacks: callbacks,
       * });
@@ -124,14 +124,14 @@ SuperMap.Control.SelectGraphic = SuperMap.Class(SuperMap.Control, {
 	  *
       * 1、如果要素仅需要支持click事件，在实例化SelectGraphic时，只需注册onSelect事件即可，代码如下：
 	  * (start code)
-      * var selectGraphic = new SuperMap.Control.SelectGraphic(vectorLayer, {
+      * var selectGraphic = new SuperMap.Control.SelectGraphic(graphicLayer, {
       *     onSelect: onGraphicSelected
       * });
 	  * (end)
       * 2、如果要素仅需要支持over事件，在实例化SelectGraphic时，只需注册onSelect事件，
       *    同时设置hover属性为true，代码如下：
 	  * (start code)
-      * var selectGraphic = new SuperMap.Control.SelectGraphic(vectorLayer, {
+      * var selectGraphic = new SuperMap.Control.SelectGraphic(graphicLayer, {
       *     onSelect: onGraphicSelected，
       * });
 	  * (end)
@@ -163,13 +163,13 @@ SuperMap.Control.SelectGraphic = SuperMap.Class(SuperMap.Control, {
       * 创建一个选择要素的控件。
       *
       * Parameters:
-      * layers - {<SuperMap.Layer.Vector>} vector图层数组。用于从layer(s)选择要素集。
+      * layers - {<SuperMap.Layer.Graphics>} graphic图层数组。用于从layer(s)选择要素集。
       * options - {Object} 
       *     
       *    创建 SelectGraphic 控件，可用如下方法：
       *    (start code) 
-      *    //声明一个矢量图层 vectorLayer，在 vectorLayer 上进行要素选择
-      *    vectorLayer = new SuperMap.Layer.Vector("Vector Layer"); 
+      *    //声明一个矢量图层 graphicLayer，在 graphicLayer 上进行要素选择
+      *    var graphicLayer = new SuperMap.Layer.Graphics("Graphic Layer", null, {hitDetection: true, useCanvasEvent: false});
       *    //实例化 selectGraphic 控件，调用了 onSelect 和 onUnselect 方法
       *    //地物被选中时调用 onSelect 方法，地物被取消选中时调用 onUnselect 方法      
       *    selectGraphic = new SuperMap.Control.SelectGraphic(vectorLayer,
@@ -312,7 +312,7 @@ SuperMap.Control.SelectGraphic = SuperMap.Class(SuperMap.Control, {
       * selected, and call the onSelect function.
       * 
       * Parameters:
-      * graphic - {<SuperMap.Graphic.Vector>}
+      * graphic - {<SuperMap.Graphic>}
       */
     select: function(graphic, evt) {
         var cont = this.onBeforeSelect.call(this.scope, graphic);

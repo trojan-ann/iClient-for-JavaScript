@@ -129,7 +129,7 @@ SuperMap.LevelRenderer.Shape.SmicPolygon= SuperMap.Class(SuperMap.LevelRenderer.
                 || style.lineType == 'dotted'
                 || style.lineType == 'dot'
                 || style.lineType == 'dash'
-                || style.lineType == 'dashot'
+                || style.lineType == 'dashdot'
                 || style.lineType == 'longdash'
                 || style.lineType == 'longdashdot'
                 ) {
@@ -185,7 +185,7 @@ SuperMap.LevelRenderer.Shape.SmicPolygon= SuperMap.Class(SuperMap.LevelRenderer.
                             || hpStyle.lineType == 'dotted'
                             || hpStyle.lineType == 'dot'
                             || hpStyle.lineType == 'dash'
-                            || hpStyle.lineType == 'dashot'
+                            || hpStyle.lineType == 'dashdot'
                             || hpStyle.lineType == 'longdash'
                             || hpStyle.lineType == 'longdashdot'
                             ) {
@@ -373,7 +373,7 @@ SuperMap.LevelRenderer.Shape.SmicPolygon= SuperMap.Class(SuperMap.LevelRenderer.
                     [pattern1, pattern2]
                 );
             }
-            else if (style.lineType === 'dashot'
+            else if (style.lineType === 'dashdot'
                 || style.lineType === 'longdashdot'
                 ) {
                 var dashLengthForStyle = style._dashLength || (style.lineWidth || 1)*(style.lineType == 'dashed' ? 5 : 1);
@@ -385,8 +385,8 @@ SuperMap.LevelRenderer.Shape.SmicPolygon= SuperMap.Class(SuperMap.LevelRenderer.
                 var pattern3 = dashLength;
                 var pattern4 = dashLength;
 
-                //dashot
-                if(style.lineType === 'dashot'){
+                //dashdot
+                if(style.lineType === 'dashdot'){
                     pattern1 *= 4;
                     pattern2 *= 4;
                     pattern4 *= 4;

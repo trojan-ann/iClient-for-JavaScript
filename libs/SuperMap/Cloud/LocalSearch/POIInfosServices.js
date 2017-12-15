@@ -103,8 +103,9 @@ SuperMap.Cloud.POIInfosService = SuperMap.Class(SuperMap.ServiceBase, {
      *
      * Parameters:
      * params - {<SuperMap.Cloud.POIInfosParameter>} 查询参数。
+     * credential - {<SuperMap.Credential>} 权限信息
      */
-    processAsync: function(params) {
+    processAsync: function(params, credential) {
         if(!params){
             return;
         }
@@ -114,6 +115,7 @@ SuperMap.Cloud.POIInfosService = SuperMap.Class(SuperMap.ServiceBase, {
             method: "GET",
             params: jsonParams,
             scope: me,
+            credential: credential,
             success: me.queryComplete,
             failure: me.queryError
         });

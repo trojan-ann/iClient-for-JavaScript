@@ -321,7 +321,7 @@ SuperMap.Geometry.GeoText = SuperMap.Class(SuperMap.Geometry, {
         }
         for (var i = 0; i < numRows; i++) {
             var textCharC = this.getTextCount(textRows[i]);
-            var labelWTmp = this.labelWTmp = this.getTextWidth(style, textRows[i]) + textCharC.textC*spacing + bgstrokeWidth;
+            var labelWTmp = this.labelWTmp = SuperMap.Util.getTextBounds(style, textRows[i], this.element).textWidth + textCharC.textC*spacing + bgstrokeWidth;
             // var labelWTmp = textCharC.cnC*fontSize + textCharC.enC*(fontSize/2) + textCharC.textC*spacing + bgstrokeWidth + 1;
             // var labelWTmp = this.getTextWidth(style);
             // var labelCNWTmp = textCharC.cnC*fontSize;
@@ -351,20 +351,22 @@ SuperMap.Geometry.GeoText = SuperMap.Class(SuperMap.Geometry, {
         return labelSize;
     },
 
-    getTextWidth: function(style, text) {
-        document.body.appendChild(this.element);
-        this.element.style.width = 'auto';
-        this.element.style.height = 'auto';
-        if(style.fontSize) this.element.style.fontSize = style.fontSize;
-        if(style.fontFamily) this.element.style.fontFamily = style.fontFamily;
-        if(style.fontWeight) this.element.style.fontWeight = style.fontWeight;
-        this.element.style.position = 'absolute';
-        this.element.style.visibility = 'hidden';
-        this.element.innerHTML = text;
-        var textWidth = this.element.clientWidth;
-        document.body.removeChild(this.element);
-        return textWidth;
-    },
+    // getTextWidth: function(style, text) {
+    //     document.body.appendChild(this.element);
+    //     this.element.style.width = 'auto';
+    //     this.element.style.height = 'auto';
+    //     if(style.fontSize) this.element.style.fontSize = style.fontSize;
+    //     if(style.fontFamily) this.element.style.fontFamily = style.fontFamily;
+    //     if(style.fontWeight) this.element.style.fontWeight = style.fontWeight;
+    //     this.element.style.position = 'relative';
+    //     this.element.style.visibility = 'hidden';
+    //     //fix 在某些情况下，element内的文本变成竖起排列，导致宽度计算不正确的bug
+    //     this.element.style.display = 'inline-block';
+    //     this.element.innerHTML = text;
+    //     var textWidth = this.element.clientWidth;
+    //     document.body.removeChild(this.element);
+    //     return textWidth;
+    // },
 
     /**
      * Method: getTextBounds

@@ -80,9 +80,9 @@
             };
 
             //态势标绘编辑
-            plottingEdit = new SuperMap.Control.PlottingEdit(plottingLayer);
+            plottingEdit = new SuperMap.Control.PlottingEdit();
 
-            plottingLayer.events.on({"beforefeaturemodified": showExtendProperty});
+            plottingLayer.events.on({"featureselected": showExtendProperty});
             plottingLayer.events.on({"featuremodified": showExtendProperty});
             plottingLayer.events.on({"afterfeaturemodified": showExtendProperty});
             //添加态势标绘控件

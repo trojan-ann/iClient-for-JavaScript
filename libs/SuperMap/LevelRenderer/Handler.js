@@ -146,7 +146,7 @@ SuperMap.LevelRenderer.Handler = SuperMap.Class(SuperMap.LevelRenderer.Eventful,
                     ) {
 
                     // 判断没有发生拖拽才触发click事件
-                    if (this._clickThreshold < 5) {
+                    if (this._clickThreshold < 10) {
                         this._dispatchAgency(_lastHover, SuperMap.LevelRenderer.Config.EVENT.CLICK, event);
                     }
                 }

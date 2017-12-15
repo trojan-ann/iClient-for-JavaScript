@@ -19,6 +19,12 @@
  * POINT: "POINT",
  *
  * REGION: "REGION",
+ * 
+ * POINTEPS: "POINTEPS",
+ * 
+ * LINEEPS: "LINEEPS",
+ * 
+ * REGIONEPS: "REGIONEPS",
  *
  * ELLIPSE: "ELLIPSE",
  *
@@ -33,6 +39,9 @@ SuperMap.REST.GeometryType = {
     LINEM: "LINEM",
     POINT: "POINT",
     REGION: "REGION",
+    POINTEPS: "POINTEPS",
+    LINEEPS: "LINEEPS",
+    REGIONEPS: "REGIONEPS",
     ELLIPSE: "ELLIPSE",
     CIRCLE: "CIRCLE",
     TEXT: "TEXT",
@@ -420,7 +429,7 @@ SuperMap.REST.ThemeType = {
 SuperMap.REST.ColorGradientType = {
     BLACK_WHITE: "BLACKWHITE",
     BLUE_BLACK: "BLUEBLACK",
-    BLUE_RED : "BLUERED",
+    BLUE_RED: "BLUERED",
     BLUE_WHITE: "BLUEWHITE",
     CYAN_BLACK: "CYANBLACK",
     CYAN_BLUE: "CYANBLUE",
@@ -509,7 +518,7 @@ SuperMap.REST.FillGradientMode = {
     LINEAR: "LINEAR",
     RADIAL: "RADIAL",
     CONICAL: "CONICAL",
-    SQUARE: "SQUARE"    
+    SQUARE: "SQUARE"
 }
 
 /**
@@ -858,7 +867,7 @@ SuperMap.REST.LayerType = {
     WMS: "WMS",
     WFS: "WFS",
     CUSTOM: "CUSTOM"
-    
+
 }
 
 /**

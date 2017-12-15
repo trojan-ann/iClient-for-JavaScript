@@ -2105,12 +2105,6 @@ SuperMap.Util.committer = function (options) {
         options.url = window.encodeURI(options.url);
         options.isInTheSameDomain = options.isInTheSameDomain || SuperMap.Util.isInTheSameDomain(options.url);
         if (options.isInTheSameDomain){
-            if(options.proxy && options.method === 'POST'){
-                options.method = 'GET';
-                options.url += separator + "_method=POST";
-                separator = options.url.indexOf("?") > -1 ? "&" : "?";
-                options.url += separator + 'requestEntity='+encodeURIComponent(options.data) || '';
-            }
             if (options.method ==="GET" && options.params) {
                 var params = options.params,
                     paramString = SuperMap.Util.getParameterString(params);
@@ -2364,8 +2358,8 @@ SuperMap.Util.RequestJSONP = {
                 url += "sectionCount=" + len;
                 url += "&sectionIndex=" + i;
                 url += "&jsonpUserID=" + jsonpUserID;
-                url = decodeURIComponent(url);
                 if(proxy){
+                    url = decodeURIComponent(url);
                 	url = proxy + encodeURIComponent(url);
                 }
                 script.setAttribute("src", url);
@@ -2932,29 +2926,62 @@ SuperMap.Util.getIntersectLineArray = function(rect1,rect2){
     return [leftLine,topLine,rightLine,bottomLine];
 }
 
-SuperMap.Util.isInside = function(point, rect, side) {
-    if((side==0) &&  point.x>=rect.left)
-    {
-        return true;
+
+/**
+ * Method: SuperMap.Util.Multi
+ * 求叉积p0->p1与p0->p2的叉积
+ */
+SuperMap.Util.Multi = function(p0, p1, p2){
+    return (p1.x-p0.x)*(p2.y-p0.y)-(p2.x-p0.x)*(p1.y-p0.y);
+}
+/**
+ * Method: SuperMap.Util.isInside
+ * 判断一个点是否在一个矢量的左边
+ */
+SuperMap.Util.isInside = function(point, start, end) {
+    return SuperMap.Util.Multi(point, start, end)>=0?true:false;
+}
+/**
+ * Method: SuperMap.Util.getRectSide
+ * 根据序号来获取一个bounds的边
+ */
+SuperMap.Util.getRectSide = function(rect, side) {
+    var start = {x:rect.right,y:rect.bottom},end = {x:rect.right,y:rect.top};
+    switch (side){
+        case 1:
+            start = {x:rect.right,y:rect.top};
+            end = {x:rect.left,y:rect.top};
+            break;
+        case 2:
+            start = {x:rect.left,y:rect.top};
+            end = {x:rect.left,y:rect.bottom};
+            break;
+        case 3:
+            start = {x:rect.left,y:rect.bottom};
+            end = {x:rect.right,y:rect.bottom};
+            break;
+        default:
+            break;
     }
-    else if((side===1) &&  point.y<=rect.top)
-    {
-        return true;
-    }
-    else if((side===2) &&  point.x<=rect.right)
-    {
-        return true;
-    }
-    else if((side===3) &&  point.y>=rect.bottom)
-    {
-        return true;
-    }
-    return false;
+    return [start,end];
+}
+/**
+ * Method: SuperMap.Util.intersection
+ * 获取两条线的交点
+ */
+SuperMap.Util.intersection = function(start0, end0, start1, end1){
+    //由正弦定理推出
+    var Multi = SuperMap.Util.Multi;
+    var  pX = (Multi(start0, end1, start1)*end0.x - Multi(end0, end1, start1)*start0.x)/
+        (Multi(start0, end1, start1) - Multi(end0, end1, start1));
+    var  pY = (Multi(start0, end1, start1)*end0.y - Multi(end0, end1, start1)*start0.y)/
+        (Multi(start0, end1, start1) - Multi(end0, end1, start1));
+    return new SuperMap.Geometry.Point(pX,pY);
 }
 
 /**
  * Method: SuperMap.Util.clipPolygonRect
- * 用矩形对多边形进行裁剪
+ * 用矩形对多边形进行裁剪，算法来自Sutherland_Hodgeman裁剪算法
  *
  * Parameters:
  * polygon - {SuperMap.Geometry.Polygon}  待裁剪的多边形。
@@ -2988,7 +3015,7 @@ SuperMap.Util.clipPolygonRect = function(polygon,rect,isCloneId){
             continue;
         }
         //将矩形的四个点取出根据面的bounds计算出一个能够延长到面的bounds边缘的四条线，给后面线线求交提供基础
-        var intersectLines = SuperMap.Util.getIntersectLineArray(rect,linearRings[i].getBounds());
+        //var intersectLines = SuperMap.Util.getIntersectLineArray(rect,linearRings[i].getBounds());
         var pointArray = linearRings[i].components;
 
         var cur = [],
@@ -2998,29 +3025,34 @@ SuperMap.Util.clipPolygonRect = function(polygon,rect,isCloneId){
         var rectSize = 4,
             pointSize = pointArray.length;
 
-        var S = pointArray[pointSize - 1];
 
-        for(var j = 0; j < pointSize; j ++) {
+        var j;
+        for(j = 0; j < pointSize -1; j ++) {
             result.push(pointArray[j]);
         }
 
         var flag;
         // flag=false点在内侧，true点在外侧
-        for(var j = 0; j < rectSize; j ++) {
-            if(SuperMap.Util.isInside(S, rect, j)) {
+        for(j = 0; j < rectSize; j ++) {
+            var resultSize = result.length;
+            if(resultSize <= 0){
+                break;
+            }
+            var S = result[resultSize - 1];
+            var rectLine = SuperMap.Util.getRectSide(rect, j);
+            if(SuperMap.Util.isInside(S, rectLine[0], rectLine[1])) {
                 flag = false;
             } else {
                 flag = true;
             }
 
-            var resultSize = result.length;
             for(var k = 0; k < resultSize; k ++) {
                 //证明其在vector内
-                if(SuperMap.Util.isInside(result[k], rect, j)) {
+                if(SuperMap.Util.isInside(result[k],  rectLine[0], rectLine[1])) {
                     //如果前一个点在外侧，则将他们的交点加入结果集
                     if(flag) {
                         flag = false;
-                        cur.push(SuperMap.Util.lineIntersection(S, result[k], intersectLines[j].components[0], intersectLines[j].components[1]));
+                        cur.push(SuperMap.Util.intersection(S, result[k],  rectLine[0], rectLine[1]));
                     }
                     //并将他们当前节点加入结果集
                     cur.push(result[k]);
@@ -3028,7 +3060,7 @@ SuperMap.Util.clipPolygonRect = function(polygon,rect,isCloneId){
                     if(!flag) {
                         //如果前一个点在内侧，则将他们的交点加入结果集
                         flag = true;
-                        cur.push(SuperMap.Util.lineIntersection(S, result[k], intersectLines[j].components[0], intersectLines[j].components[1]));
+                        cur.push(SuperMap.Util.intersection(S, result[k],  rectLine[0], rectLine[1]));
                     }
                 }
                 //更新首次比较的节点
@@ -3168,4 +3200,36 @@ SuperMap.Util.clipGeometryRect = function(geometry,rect,isRetArr,isCloneId){
             return geometry;
         }
     }
+}
+
+/**
+ * Method: getTextBounds
+ * 获取文本外接矩形宽度与高度
+ *
+ * Parameters:
+ * style - {SuperMap.Style}  文本样式
+ * text - {String} 文本内容
+ * element - {DOMObject} DOM元素
+ * Returns:
+ * {Object} 返回裁剪后的宽度，高度信息
+ */
+SuperMap.Util.getTextBounds = function(style, text, element) {
+    document.body.appendChild(element);
+    element.style.width = 'auto';
+    element.style.height = 'auto';
+    if (style.fontSize) element.style.fontSize = style.fontSize;
+    if (style.fontFamily) element.style.fontFamily = style.fontFamily;
+    if (style.fontWeight) element.style.fontWeight = style.fontWeight;
+    element.style.position = 'relative';
+    element.style.visibility = 'hidden';
+    //fix 在某些情况下，element内的文本变成竖起排列，导致宽度计算不正确的bug
+    element.style.display = 'inline-block';
+    element.innerHTML = text;
+    var textWidth = element.clientWidth;
+    var textHeight = element.clientHeight;
+    document.body.removeChild(element);
+    return {
+        textWidth: textWidth,
+        textHeight: textHeight
+    };
 }

@@ -29,11 +29,9 @@
     <script type="text/javascript">
         var map, local, layer, vectorLayer, control, queryBounds, markerLayer,drawFeature;
         var plottingLayer,plottingEdit, sitManager,ListFile,plotting;
-		
         var host = document.location.toString().match(/file:\/\//)?"http://localhost:8090":'http://' + document.location.host;
         var mapurl = host + "/iserver/services/map-china400/rest/maps/China_4326";
         var serverUrl = host + "/iserver/services/plot-jingyong/rest/plot/";
-		
         function init() {
             map = new SuperMap.Map("map",{controls: [
                 new SuperMap.Control.LayerSwitcher(),
@@ -60,12 +58,18 @@
             };
 
             //态势标绘编辑
-            plottingEdit = new SuperMap.Control.PlottingEdit(plottingLayer);
+            plottingEdit = new SuperMap.Control.PlottingEdit();
             //添加态势标绘控件
             map.addControls([plottingEdit]);
 
             plotting = SuperMap.Plotting.getInstance(map, serverUrl);
             sitManager = plotting.getSitDataManager();
+            sitManager.events.on({"addSmlFileCompleted": success,
+                "addSmlFileFailed": fail,
+                "addSmlFileToLayerCompleted": success,
+                "addSmlFileToLayerFailed": fail,
+                "openSmlFileCompleted": openSuccess,
+                "openSmlFileFailed": fail});
         }
         function addLayer() {
             map.addLayers([layer, plottingLayer]);
@@ -75,14 +79,14 @@
         }
 
         function add(){
-            sitManager.addSmlFile('file', true, success, fail);
+            sitManager.addSmlFile('file', true);
         }
         function addtolayer(){
-            sitManager.addSmlFileToLayer('file', "标绘图层", success, fail);
+            sitManager.addSmlFileToLayer('file', "标绘图层");
 
         }
         function openfile(){
-            sitManager.openSmlFile('file', success, fail);
+            sitManager.openSmlFile('file');
         }
         function clearlayer(){
             plottingEdit.deactivate();
@@ -102,6 +106,10 @@
 
         function success(){
 
+        }
+        function openSuccess(){
+            var sitDataLayers = sitManager.getSitDataLayers();
+            plottingLayer = sitDataLayers[0];
         }
 
         function fail(){

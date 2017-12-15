@@ -95,8 +95,8 @@ plottingEdit.activate();
     <p>
         <pre>
 //首先绑定图层的beforefeaturemodified事件
-plottingLayer.events.register("beforefeaturemodified", this, changeProperty);
-//修改属性，beforefeaturemodified事件的处理函数
+plottingLayer.events.register("featureselected", this, changeProperty);
+//修改属性，featureselected事件的处理函数
 function showFeatureProperty(selectFeatueEvt)
 {
     if(selectFeatueEvt && selectFeatueEvt !== null){
@@ -147,7 +147,7 @@ function showFeatureProperty(selectFeatueEvt)
             <tr><td>selectfeature.style.fillBackColor</td><td>{String}设置/获取标号背景色，例如，"ffff00"，渐变填充时生效</td><td>支持</td><td>支持</td></tr>
             <tr><td>selectfeature.style.fillBackOpacity</td><td>{Number}设置/获取标号背景填充透明度，，取值范围(0-1)，渐变填充时生效</td><td>支持</td><td>支持</td></tr>
             <tr><td>selectfeature.style.display</td><td>{String}设置/获取标号可见性，display可见，none不可见</td><td>支持</td><td>支持</td></tr>
-            <tr><td>selectfeature.style.fontSize</td><td>{String}设置/获取点标号注记字体大小，单位是"em",例如，fontSize="2em"</td><td>支持</td><td>不支持</td></tr>
+            <tr><td>selectfeature.style.fontSize</td><td>{String}设置/获取点标号注记字体大小，单位是像素,例如，fontSize="2em"</td><td>支持</td><td>不支持</td></tr>
             <tr><td>selectfeature.style.fontColor</td><td>{String}设置/获取点标号注记字体颜色，十六进制颜色</td><td>支持</td><td>不支持</td></tr>
             <tr><td>selectfeature.style.fontFamily</td><td>{String}设置/获取点标号注记字体类型</td><td>支持</td><td>不支持</td></tr>
             <tr><td>selectfeature.geometry.setRotate(value)/getRetate()</td><td>{Number}设置/获取点标号旋转角度</td><td>支持</td><td>不支持</td></tr>

@@ -94,8 +94,9 @@ SuperMap.Cloud.GeoDecodingService = SuperMap.Class(SuperMap.ServiceBase, {
      *
      * Parameters:
      * params - {<SuperMap.Cloud.GeoDecodingParameter>} 查询请求参数，由 GeoDecodingParameter 对象组成的数组。
+     * credential - {<SuperMap.Credential>} 权限信息
      */
-    processAsync: function(params) {
+    processAsync: function(params, credential) {
         if(!params){
             return;
         }
@@ -110,6 +111,7 @@ SuperMap.Cloud.GeoDecodingService = SuperMap.Class(SuperMap.ServiceBase, {
             method: "GET",
             params:params.toObject(),
             scope: me,
+            credential: credential,
             success: me.geoDecodingComplete,
             failure: me.geoDecodingError
         });

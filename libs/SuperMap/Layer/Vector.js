@@ -585,7 +585,7 @@ SuperMap.Layer.Vector = SuperMap.Class(SuperMap.Layer, {
             var coordSysUnchanged = true;
 
             if (!dragging) {
-                this.renderer.root.style.visibility = "hidden";        
+                this.renderer.root.style.visibility = "hidden";
                 //保存canvas绘图状态。
                 if(useCanvas2){
                     this.renderer.restoreCanvas();
@@ -605,7 +605,7 @@ SuperMap.Layer.Vector = SuperMap.Class(SuperMap.Layer, {
                 //在setExtent方法中设置了canvasRenderer的lastbounds。
                 coordSysUnchanged = this.renderer.setExtent(extent, zoomChanged);
 
-                this.renderer.root.style.visibility = "visible";
+                this.renderer.root.style.visibility = "";
 
                 // Force a reflow on gecko based browsers to prevent jump/flicker.
                 // This seems to happen on only certain configurations; it was originally

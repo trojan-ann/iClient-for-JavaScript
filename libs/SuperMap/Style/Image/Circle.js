@@ -9,7 +9,7 @@
  */
 
 /**
- * Class: SuperMap.Style.LinearGradient
+ * Class: SuperMap.Style.Circle
  * 圆形类.
  */
 SuperMap.Style.Circle = SuperMap.Class(SuperMap.Style.Image,{
@@ -60,11 +60,14 @@ SuperMap.Style.Circle = SuperMap.Class(SuperMap.Style.Image,{
      * 渲染
      */
     render: function(){
-        var lineDash = null, strokeStyle, strokeWidth = 0;
+        var lineDash = null, strokeStyle, strokeWidth = 0,strokeOpacity;
 
         if(this.stroke){
             strokeStyle = this.stroke.color;
             strokeWidth = this.stroke.width;
+            if(this.stroke.opacity || this.stroke.opacity === 0) {
+                strokeOpacity = this.stroke.opacity
+            }
             if(strokeWidth === undefined){
                 strokeWidth = 1;
             }
@@ -78,7 +81,8 @@ SuperMap.Style.Circle = SuperMap.Class(SuperMap.Style.Image,{
             strokeStyle: strokeStyle,
             strokeWidth: strokeWidth,
             size: size,
-            lineDash: lineDash
+            lineDash: lineDash,
+            strokeOpacity:strokeOpacity
         };
 
         // no atlas manager is used, create a new canvas
@@ -120,11 +124,15 @@ SuperMap.Style.Circle = SuperMap.Class(SuperMap.Style.Image,{
 
         if (this.fill) {
             context.fillStyle = this.fill.color;
+            if(this.fill.opacity || this.fill.opacity === 0) {
+                context.globalAlpha = this.fill.opacity;
+            }
             context.fill();
         }
         if (this.stroke) {
             context.strokeStyle = renderOptions.strokeStyle;
             context.lineWidth = renderOptions.strokeWidth;
+            context.globalAlpha = renderOptions.strokeOpacity;
             if (renderOptions.lineDash) {
                 context.setLineDash(renderOptions.lineDash);
             }

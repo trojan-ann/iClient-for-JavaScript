@@ -9,7 +9,8 @@
 (function () {
 
 	// Save reference to earlier defined object implementation (if any)
-	var oXMLHttpRequest = window.XMLHttpRequest;
+	// 保存此引用后，iclient里面的请求就没法被mock测试了，所以此处不保存引用  edit by yanjy 2017.12.14
+	//var oXMLHttpRequest = window.XMLHttpRequest;
 
 	// Define on browser type
 	var bGecko  = !!window.controllers;
@@ -18,7 +19,7 @@
 
 	// Enables "XMLHttpRequest()" call next to "new XMLHttpRequest()"
 	function fXMLHttpRequest() {
-		this._object  = oXMLHttpRequest && !bIE7 ? new oXMLHttpRequest : new window.ActiveXObject("Microsoft.XMLHTTP");
+		this._object  = window.XMLHttpRequest && !bIE7 ? new window.XMLHttpRequest : new window.ActiveXObject("Microsoft.XMLHTTP");
 		this._listeners = [];
 	}
 
@@ -29,8 +30,8 @@
 	cXMLHttpRequest.prototype = fXMLHttpRequest.prototype;
 
 	// BUGFIX: Firefox with Firebug installed would break pages if not executed
-	if (bGecko && oXMLHttpRequest.wrapped) {
-		cXMLHttpRequest.wrapped = oXMLHttpRequest.wrapped;
+	if (bGecko && window.XMLHttpRequest.wrapped) {
+		cXMLHttpRequest.wrapped = window.XMLHttpRequest.wrapped;
 	}
 
 	// Constants

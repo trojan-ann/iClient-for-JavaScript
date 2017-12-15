@@ -3,10 +3,10 @@
 <%@ page pageEncoding="UTF-8" isELIgnored="false" %>
 <%
 /**
-*ÎªÊµÏÖ¿Í»§¶Ë¿çÓòÇëÇó¶ø²ÉÓÃjspÖÆ×÷µÄ´úÀí×ª·¢Æ÷
-*Ê¹ÓÃ·½Ê½£º
-*½«¸ÃÎÄ¼þ·ÅÔÚiserver webappsÏÂÃæÄãµÄ¹¤³ÌÄ¿Â¼ÏÂ£¬ÇëÇó¸ñÊ½£ºhttp://localhost:8090/yourRoot/Proxy.jsp?url=yoururl,×¢Òâurl²ÎÊýÖÐÌØÊâ×Ö·ûÐèÒª×ªÂë¡£
-*Ö§³Öpost£¬getÇëÇó
+*ä¸ºå®žçŽ°å®¢æˆ·ç«¯è·¨åŸŸè¯·æ±‚è€Œé‡‡ç”¨jspåˆ¶ä½œçš„ä»£ç†è½¬å‘å™¨
+*ä½¿ç”¨æ–¹å¼ï¼š
+*å°†è¯¥æ–‡ä»¶æ”¾åœ¨iserver webappsä¸‹é¢ä½ çš„å·¥ç¨‹ç›®å½•ä¸‹ï¼Œè¯·æ±‚æ ¼å¼ï¼šhttp://localhost:8090/yourRoot/Proxy.jsp?url=yoururl,æ³¨æ„urlå‚æ•°ä¸­ç‰¹æ®Šå­—ç¬¦éœ€è¦è½¬ç ã€‚
+*æ”¯æŒpostï¼Œgetè¯·æ±‚
 */
 try {
 	String reqUrl = request.getParameter("url");

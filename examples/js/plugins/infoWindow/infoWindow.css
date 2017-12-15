@@ -14,7 +14,7 @@
 .pop-header .pop-titlename{
     color: #ffffff;
     font-size: 16px;
-    margin-left: 15px;
+    margin-left: 20px;
     overflow: hidden;
     font-weight: 400;
     line-height: 2.3;
@@ -26,7 +26,6 @@
     top: 26%;
     color: #ffffff;
     font-size: 17px;
-    opacity: 0.6;
     right: 18px;
 }
 
@@ -68,12 +67,36 @@
 }
 
 .content-table {
-    position: absolute;
-    top:5px;
-    left:15px;
+    width: 100%;
+    margin-top: 9px;
+    table-layout: fixed;
 }
 .content-table td{
-    width:130px;
-    height:30px;
-    font-size:14px;
+    height: 30px;
+    font-size: 14px;
+    padding-left: 18px;
+    word-wrap: break-word;
+    color: #ababab;
+}
+
+.content-table tr {
+    height: 32px;
+}
+.nano >.nano-pane {
+    opacity: 1;
+}
+.gray-line {
+    background-color: #eaeaea;
+}
+.content-table span {
+    display: inline-block;
+    color: #585858;
+    overflow: hidden;
+    max-width: 133px;
+    text-overflow: ellipsis;
+}
+.gray-line  .title-td {
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
 }

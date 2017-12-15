@@ -312,6 +312,7 @@ SuperMap.Lang["zh-CN"] = {
     'undoStackOverflow': '撤销的栈溢出',
 
     //Mapviewer
-    'noContent':'无内容'
+    'noContent':'无内容',
+    'lableTitle': '_标签图层'
 
 };

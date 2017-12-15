@@ -1,7 +1,117 @@
-/* COPYRIGHT 2012 SUPERMAP
+﻿/* COPYRIGHT 2012 SUPERMAP
  * 本程序只能在有效的授权许可下使用。
  * 未经许可，不得以任何手段擅自使用或传播。*/
 
+/*
+ * JsonSQL
+ * By: Trent Richardson [http://trentrichardson.com]
+ * Version 0.1
+ * Last Modified: 1/1/2008
+ *
+ * Copyright 2008 Trent Richardson
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+var jsonsql = {
+
+    query: function(sql,json){
+
+        var returnfields = sql.match(/^(select)\s+([a-z0-9_\,\.\s\*]+)\s+from\s+([a-z0-9_\.]+)(?: where\s+\((.+)\))?\s*(?:order\sby\s+([a-z0-9_\,]+))?\s*(asc|desc|ascnum|descnum)?\s*(?:limit\s+([0-9_\,]+))?/i);
+
+        var ops = {
+            fields: returnfields[2].replace(' ','').split(','),
+            from: returnfields[3].replace(' ',''),
+            where: (returnfields[4] == undefined)? "true":returnfields[4],
+            orderby: (returnfields[5] == undefined)? []:returnfields[5].replace(' ','').split(','),
+            order: (returnfields[6] == undefined)? "asc":returnfields[6],
+            limit: (returnfields[7] == undefined)? []:returnfields[7].replace(' ','').split(',')
+        };
+
+        return this.parse(json, ops);
+    },
+
+    parse: function(json,ops){
+        var o = { fields:["*"], from:"json", where:"", orderby:[], order: "asc", limit:[] };
+        for(i in ops) o[i] = ops[i];
+
+        var result = [];
+        result = this.returnFilter(json,o);
+        result = this.returnOrderBy(result,o.orderby,o.order);
+        result = this.returnLimit(result,o.limit);
+
+        return result;
+    },
+
+    returnFilter: function(json,jsonsql_o){
+
+        var jsonsql_scope = eval(jsonsql_o.from);
+        var jsonsql_result = [];
+        var jsonsql_rc = 0;
+
+        if(jsonsql_o.where == "")
+            jsonsql_o.where = "true";
+
+        for(var jsonsql_i in jsonsql_scope){
+            with(jsonsql_scope[jsonsql_i]){
+                if(eval(jsonsql_o.where)){
+                    jsonsql_result[jsonsql_rc++] = this.returnFields(jsonsql_scope[jsonsql_i],jsonsql_o.fields);
+                }
+            }
+        }
+
+        return jsonsql_result;
+    },
+
+    returnFields: function(scope,fields){
+        if(fields.length == 0)
+            fields = ["*"];
+
+        if(fields[0] == "*")
+            return scope;
+
+        var returnobj = {};
+        for(var i in fields)
+            returnobj[fields[i]] = scope[fields[i]];
+
+        return returnobj;
+    },
+
+    returnOrderBy: function(result,orderby,order){
+        if(orderby.length == 0)
+            return result;
+
+        result.sort(function(a,b){
+            switch(order.toLowerCase()){
+                case "desc": return (eval('a.'+ orderby[0] +' < b.'+ orderby[0]))? 1:-1;
+                case "asc":  return (eval('a.'+ orderby[0] +' > b.'+ orderby[0]))? 1:-1;
+                case "descnum": return (eval('a.'+ orderby[0] +' - b.'+ orderby[0]));
+                case "ascnum":  return (eval('b.'+ orderby[0] +' - a.'+ orderby[0]));
+            }
+        });
+
+        return result;
+    },
+
+    returnLimit: function(result,limit){
+        switch(limit.length){
+            case 0: return result;
+            case 1: return result.splice(0,limit[0]);
+            case 2: return result.splice(limit[0]-1,limit[1]);
+        }
+    }
+
+};
 
 /**
  * @requires SuperMap/Cloud.js
@@ -12,6 +122,11 @@
  * iportal或者isupermap的地图展示类，只需要url地址和地图id，就可以在自己的页面上创建一幅iportal或者isupermap的公开地图
  */
 SuperMap.Cloud.MapViewer=SuperMap.Class({
+    /**
+     * APIProperty: googleUrlFormat
+     * 谷歌图层的url格式，默认为：'http://mt3.google.cn/vt/lyrs=m&hl=zh-CN&gl=cn&x=${x}&y=${y}&z=${z}'
+     */
+    googleUrlFormat:'http://mt3.google.cn/vt/lyrs=m&hl=zh-CN&gl=cn&x=${x}&y=${y}&z=${z}',
     /**
      * Property: isFirstPreview
      * {boolean} 是否为第一次预览mapviewer的地图，默认为true
@@ -76,12 +191,6 @@ SuperMap.Cloud.MapViewer=SuperMap.Class({
     layerCounter:0,
 
     /**
-     * APIProperty: selectCtrl
-     * {<SuperMap.Control.SelectFeature>} MapViewer自带的要素选择控件
-     * */
-    selectCtrl:null,
-
-    /**
      * Property: mapInfo
      * {Object} 地图信息对象，保存比如center,level,bounds等信息
      * */
@@ -98,10 +207,46 @@ SuperMap.Cloud.MapViewer=SuperMap.Class({
     mapIds: null,
 
     /**
+     * Property: vectorLayers
+     * {Array(<Supermap.Layer.Vecotr>)} 地图中的所有要素图层
+     */
+    vectorLayers:null,
+
+    /**
+     * Property: markerLayers
+     * {Array(<Supermap.Layer.Markers>)} 地图中的所有标注图层
+     */
+    markerLayers:null,
+
+    /**
+     * Property: selectedFeature
+     * {<SuperMap.Feature.Vector>} 当前被选中的要素
+     */
+    selectedFeature:null,
+
+    /**
+     * Property: lastSelectedFeature
+     * {<SuperMap.Feature.Vector>} 上一次被选中的要素
+     */
+    lastSelectedFeature:null,
+
+    /**
+     * Property: selectedMarker
+     * {<SuperMap.Marker>} 当前被选中的标注
+     */
+    selectedMarker:null,
+
+    /**
+     * Property: lastSelectedMarker
+     * {<SuperMap.Marker>} 上一次被选中的标注
+     */
+    lastSelectedMarker:null,
+
+    /**
      * Property: EVENT_TYPES
      * {Array} 事件数据
      * */
-    EVENT_TYPES: ['loadMapError',"baselayerInitialized","layersInitialized","markerClicked","featureSelected","featureUnSelected","featureEditing","featureEdited","uniquefeatureclicked","rangefeatureclicked","vectorfeatureclicked","getfeaturefaild"],
+    EVENT_TYPES: ['loadMapError',"baselayerInitialized","layersInitialized","markerClicked", "markerUnClicked", "featureSelected","featureUnSelected","featureEditing","featureEdited","getfeaturefaild"],
 
     /**
      * APIProperty: events
@@ -111,9 +256,10 @@ SuperMap.Cloud.MapViewer=SuperMap.Class({
      * loadMapError - 地图加载失败。
      * baselayerInitialized - 当底图加载完成后触发此事件。
      * layersInitialized - 当所有的图层加载完成触发此事件。
-     * markerClicked - 当Marker图层上的marker被点击时触发此事件。
-     * featureSelected - 当被设置到SelectCtr上的Vector里要素被选择时的时触发此事件。
-     * featureUnSelected - 当被设置到SelectCtr上的Vector里要素被取消选择时的时触发此事件。
+     * markerClicked - 当Marker图层上的marker被选中时触发此事件。
+     * markerUnClicked - 当Marker图层上的marker被取消选择时触发此事件。
+     * featureSelected - 当要素被选择时的时触发此事件。
+     * featureUnSelected - 当要素被取消选择时的时触发此事件。
      * featureEditing - 当modifyFeatureVectorLayer的要素被编辑时触发此事件。
      * featureEdited - 当modifyFeatureVectorLayer的要素被编辑完成触发此事件。
      *
@@ -175,7 +321,15 @@ SuperMap.Cloud.MapViewer=SuperMap.Class({
 
         var end = url.substr(url.length - 1, 1);
         this.isOnline = this.isOnlineURL(url);
-        this.url=url+(end==="/"?"apps/viewer/":"/apps/viewer/");
+        this.rootURL = url + (end==="/"?"":"/");
+        var appUrl = url + (end==="/"?"apps/":"/apps/");
+        this.url = appUrl + 'viewer/';
+        //添加一个图标并隐藏掉，以让浏览器加载下字体图标
+        var fontDiv = document.createElement('div');
+        fontDiv.setAttribute('class','supermapol-icons-flag');
+        fontDiv.style.position = 'absolute';
+        fontDiv.style.top = '-10000000px';
+        document.body.appendChild(fontDiv);
         SuperMap.Util.extend(this, options);
         this.setContainer(container);
         this.events = new SuperMap.Events(this, null,
@@ -190,6 +344,8 @@ SuperMap.Cloud.MapViewer=SuperMap.Class({
         this.hasBaseLayer = false;
         this.actived=true;
         this.mapIds = [];
+        this.vectorLayers = [];
+        this.markerLayers = [];
     },
 
     /**
@@ -229,7 +385,6 @@ SuperMap.Cloud.MapViewer=SuperMap.Class({
         this.map=null;
         this.mapInfo=null;
         this.baseLayer=null;
-        this.selectCtrl=null;
         this.vectorSelectFeature=null;
         this.layers=null;
         this.layerCounter=null;
@@ -242,6 +397,8 @@ SuperMap.Cloud.MapViewer=SuperMap.Class({
         }
         this.events=null;
         this.mapIds = null;
+        this.vectorLayers = null;
+        this.markerLayers = null;
     },
 
     /**
@@ -261,7 +418,7 @@ SuperMap.Cloud.MapViewer=SuperMap.Class({
         }else{
             url = this.url + mapid +".json";
         }
-        var isInTheSameDomain= (this.proxy && SuperMap.Util.isInTheSameDomain (this.proxy)) || SuperMap.Util.isInTheSameDomain (url);
+        var isInTheSameDomain = this.isInTheSameDomain = (this.proxy && SuperMap.Util.isInTheSameDomain (this.proxy)) || SuperMap.Util.isInTheSameDomain (url);
         var that=this;
         if(!isInTheSameDomain){
             url=url.replace(/.json/,".jsonp");
@@ -336,6 +493,11 @@ SuperMap.Cloud.MapViewer=SuperMap.Class({
                     this.map.setLayerIndex(layer,_originIndex);
                     delete layer._originIndex;
                 }
+                if(layer instanceof SuperMap.Layer.Vector || layer instanceof SuperMap.Layer.Theme){
+                    this.vectorLayers.push(layer);
+                }else if(layer instanceof SuperMap.Layer.Markers){
+                    this.markerLayers.push(layer);
+                }
             }
             // if(this.modifyFeatureVectorLayer){
             //     this.map.setLayerIndex(this.modifyFeatureVectorLayer,len);
@@ -380,6 +542,7 @@ SuperMap.Cloud.MapViewer=SuperMap.Class({
                 continue;
             }else{
                 layerInfo.isBaseLayer=true;
+
             }
             //创建底图
             var layer, center=this.mapInfo.center||layerInfo.center,
@@ -453,8 +616,6 @@ SuperMap.Cloud.MapViewer=SuperMap.Class({
      * */
     createMap:function(key,container){
         var map=this.map;
-		//解决第二次出图。图层添加顺序问题
-        this.hasBaseLayer = null;
         container=container&&SuperMap.Util.getElement(container)||this.container;
         this.actived=true;
         var that=this;
@@ -462,15 +623,6 @@ SuperMap.Cloud.MapViewer=SuperMap.Class({
             SuperMap.Credential.CREDENTIAL = new SuperMap.Credential(key,'key');
         }
         if(!map){
-            var selectCtrl =this.selectCtrl= new SuperMap.Control.SelectFeature(new SuperMap.Layer.Vector(), {
-                onSelect: function(){
-                    that.events.triggerEvent("featureSelected",arguments);
-                },
-                onUnselect: function(){
-                    that.events.triggerEvent("featureUnSelected",arguments);
-                },
-                repeat: true
-            });
             map =this.map= new SuperMap.Map(container, {
                 controls: [
                     new SuperMap.Control.ScaleLine(),
@@ -480,7 +632,7 @@ SuperMap.Cloud.MapViewer=SuperMap.Class({
                         dragPanOptions: {
                             enableKinetic: true
                         }
-                    }), selectCtrl]
+                    })]
             });
             if (SuperMap.Browser.name==="msie"&&SuperMap.Browser.version>=9) {
                 map.addControl(new SuperMap.Control.OverviewMap({maximized: false}));
@@ -488,9 +640,164 @@ SuperMap.Cloud.MapViewer=SuperMap.Class({
             if (this.displayCoords) {
                 map.addControl(new SuperMap.Control.MousePosition());
             }
-            selectCtrl.activate();
+            //监听地图的点击、鼠标移动等事件
+            map.events.on({
+                click: function(evt){
+                    evt = evt || window.event;
+                    that.handleMapEvent.call(that,evt,map);
+                },
+                touchend:function(evt){
+                    evt = evt || window.event;
+                    that.handleMapEvent.call(that,evt,map);
+                },
+                mousemove: function(evt){
+                    evt = evt || window.event;
+                    that.handleMapEvent.call(that,evt,map);
+                }
+            });
+            //专题图图层需要触发mousedown事件，因为这个图层会根据mousedown和mouseup事件返回的鼠标位置判断鼠标有没有被拖动，拖动了则不触发click事件
+            map.eventsDiv.addEventListener('mousedown', function(evt){
+                evt = evt || window.event;
+                that.handleMapEvent.call(that,evt,map);
+            });
         }
         return map;
+    },
+
+    /**
+     * Method: handleMapClick
+     * 地图点击、鼠标移动等事件处理程序
+     * Parameters:
+     *  evt - {MouseEvent} 事件对象
+     *  map - {<SuperMap.Map>} 地图对象
+     */
+    handleMapEvent: function(evt, map){
+        if(!evt || !evt.target || (evt.target.nodeName !== 'svg' && evt.target.nodeName !== 'CANVAS')){
+            return;
+        }
+        var mapDivPosition = SuperMap.Util.pagePosition(map.div);
+        var type = evt.type;
+        var isClick = type === 'click' || type === 'touchend';
+        var offsetLeft = -mapDivPosition[0],
+            offsetTop = -mapDivPosition[1],
+            offsetX = isClick ? offsetLeft : parseInt(map.layerContainerDiv.style.left),
+            offsetY = isClick ? offsetTop : parseInt(map.layerContainerDiv.style.top);
+        var vectorLayers = this.vectorLayers;
+        //添加此参数用来过滤掉原生的事件响应，只使用模拟的事件响应
+        this.__isSimulating = true;
+        if(vectorLayers && vectorLayers.length > 0){
+            var newEvt,isThemeLayer;
+            if(type === 'mousemove'){
+                map.eventsDiv.style.cursor = '';
+            }
+            for(var i = 0, len = vectorLayers.length; i < len; i++){
+                var vector = vectorLayers[i];
+                if(!vector.visibility){
+                    continue;
+                }
+                isThemeLayer = vector instanceof SuperMap.Layer.Theme;
+                newEvt = this.getSimulateEvent(evt, isThemeLayer ? offsetX : offsetLeft, isThemeLayer ? offsetY : offsetTop);
+                //事件分发到各个图层上去，假如有一个图层选中了一个要素，则此要素就是this.selectedFeature
+                vector.div.dispatchEvent(newEvt);
+            }
+            //处理选中和未选中要素的事件
+            if(isClick && !map.dragging){
+                if(!this.selectedFeature){
+                    //此次点击未选中任何要素，则上次有选中的要素时，触发下未选中事件
+                    this.lastSelectedFeature && this.events.triggerEvent('featureUnSelected',this.lastSelectedFeature);
+                }else{
+                    //此次选中了要素
+                    //当选中的要素与上次选中的要素不一样时，上次选中的要素的未选中事件
+                    if(this.lastSelectedFeature && this.lastSelectedFeature !== this.selectedFeature){
+                        this.events.triggerEvent('featureUnSelected',this.lastSelectedFeature);
+                    }
+                    //触发下此次选择要素的选中事件
+                    this.events.triggerEvent('featureSelected',this.selectedFeature);
+                }
+                //保存此次选中的要素到下次选中
+                this.lastSelectedFeature = this.selectedFeature;
+                this.selectedFeature = null;
+            }
+        }
+        this.__isSimulating = false;
+        if(isClick && !map.dragging && this.markerLayers && this.markerLayers.length > 0){
+            //marker的click事件会比map的click事件先触发，所以此处可以判断有没有被选中，原理跟要素的的选中一样
+            if(!this.selectedMarker){
+                this.lastSelectedMarker && this.events.triggerEvent("markerUnClicked",this.lastSelectedMarker);
+            }else{
+                if(this.lastSelectedMarker && this.lastSelectedMarker !== this.selectedMarker){
+                    this.lastSelectedMarker && this.events.triggerEvent("markerUnClicked",this.lastSelectedMarker);
+                }
+                this.selectedMarker && this.events.triggerEvent("markerClicked",this.selectedMarker);
+            }
+            this.lastSelectedMarker = this.selectedMarker ;
+            this.selectedMarker = null;
+        }
+    },
+
+    /**
+     * 获取模拟的事件
+     * Parameters:
+     *  evt - {MouseEvent} 事件对象
+     *  offsetX - {Integer} x方向的偏移
+     *  offsetY - {Integer} y方向的偏移
+     */
+    getSimulateEvent:function(evt,offsetX,offsetY){
+        var type = evt.type;
+        var event;
+        //clientX和clientY改用pageX和pageY，以解决在有滚动条的情况下，hover及点击不起作用的bug
+        var clientX,clientY,x,y;
+        if(type === 'touchend'){
+          var touches = evt.changedTouches;
+          if(touches && touches.length > 0){
+            clientX = touches[0].pageX + offsetX;
+            clientY = touches[0].pageY + offsetY;
+            x = evt.xy.x + offsetX;
+            y = evt.xy.y + offsetY;
+            touches[0].pageX = clientX;
+            touches[0].pageY = clientY;
+            touches[0].clientX = clientX;
+            touches[0].clientY = clientY;
+          }
+          if(window.TouchEvent){
+            return new TouchEvent(type,evt);
+          }
+        }else{
+          clientX = evt.pageX + offsetX;
+          clientY = evt.pageY + offsetY;
+          x=evt.x + offsetX;
+          y = evt.y + offsetY;
+          if(window.MouseEvent){
+              try{
+                  event = new window.MouseEvent(type,{
+                      bubbles:false,
+                      cancelable:true,
+                      view:window,
+                      screenX: evt.screenX,
+                      screenY: evt.screenY,
+                      pageX:evt.pageX,
+                      pageY:evt.pageY,
+                      clientX: clientX,
+                      clientY: clientY,
+                      x: x,
+                      y: y
+                  });
+                  return event
+              }catch(error){
+                  event = document.createEvent('MouseEvents');
+                  event.initMouseEvent(type,false,true,window,0,evt.screenX,evt.screenY,clientX,clientY,evt.ctrlKey,evt.altKey,evt.shiftKey,evt.metaKey,evt.button,evt.relatedTarget);
+                  event.x = x;
+                  event.y = y;
+                  return event;
+              }
+          }else{
+              event = document.createEvent('MouseEvents');
+              event.initMouseEvent(type,false,true,window,0,evt.screenX,evt.screenY,clientX,clientY,evt.ctrlKey,evt.altKey,evt.shiftKey,evt.metaKey,evt.button,evt.relatedTarget);
+              event.x = x;
+              event.y = y;
+              return event;
+          }
+        }
     },
 
     /**
@@ -504,10 +811,12 @@ SuperMap.Cloud.MapViewer=SuperMap.Class({
             this.events.un({"layersInitialized":this.reOrderLayer});
         }
         this.reOrderLayer=null;
-        this.selectCtrl&&this.selectCtrl.destroy();
-        this.selectCtrl=null;
+        //解决第二次出图。图层添加顺序问题
+        this.hasBaseLayer = null;
         this.map&&this.map.destroy();
         this.map=null;
+        this.vectorLayers.length = 0;
+        this.markerLayers.length = 0;
     },
 
     /**
@@ -557,6 +866,9 @@ SuperMap.Cloud.MapViewer=SuperMap.Class({
             case "CLOUD":
                 layer=this.createCloudLayer(layerInfo);
                 break;
+            case "GOOGLE":
+                layer=this.createGoogleLayer(layerInfo);
+                break;
             case "MARKER_LAYER":
                 layer=this.createMarkerLayer(layerInfo);
                 if(layer){
@@ -576,12 +888,6 @@ SuperMap.Cloud.MapViewer=SuperMap.Class({
                     if(layer){
                         this.addFeature2ThemeLayer(layerInfo,layer);
                         var me = this;
-                        //解决标签图层添加后再请求标签
-                        labelLayer && labelLayer.events.on({
-                            "added": function(){
-                                labelLayer && me.addFeature2LableLayer(layerInfo,labelLayer);
-                            }
-                        });
                     }
                 } else{
                     layer=this.createVectorLayer(layerInfo);
@@ -749,6 +1055,7 @@ SuperMap.Cloud.MapViewer=SuperMap.Class({
      * */
     createCloudLayer: function (layerInfo) {
         var title=layerInfo.title,
+            identifier=layerInfo.identifier,
             opacity=layerInfo.opacity,
             isVisible = layerInfo.isVisible,
             url=layerInfo.url,
@@ -762,11 +1069,39 @@ SuperMap.Cloud.MapViewer=SuperMap.Class({
             projection: "EPSG:" + epsgCode,
             visibility:isVisible
         };
+        if(identifier === 'blue-black'){
+            options.version = 'v3';
+        }
         if(this.proxy && this.tileProxy){
             options.proxy = this.proxy;
             options.tileProxy = this.tileProxy;
         }
         return new SuperMap.Layer.CloudLayer(options);
+    },
+    /**
+     * Method: createGoogleLayer
+     * 创建谷歌图层
+     * */
+    createGoogleLayer: function (layerInfo) {
+        var title=layerInfo.title,
+            identifier=layerInfo.identifier,
+            opacity=layerInfo.opacity,
+            isVisible = layerInfo.isVisible,
+            url=layerInfo.url
+        var options ={
+            dpi : 96,
+            name: title,
+            opacity:opacity,
+            visibility:isVisible
+        };
+        var layer;
+        if(identifier === 'china'){
+            options. sphericalMercator = true;
+            layer = new SuperMap.Layer.XYZ(title,this.googleUrlFormat,options);
+        }else{
+            layer = new SuperMap.Layer.Google(title,options);
+        }
+        return layer;
     },
 
     /**
@@ -1119,28 +1454,162 @@ SuperMap.Cloud.MapViewer=SuperMap.Class({
         var title=layerInfo.title,
             style=layerInfo.style,
             opacity=layerInfo.opacity,
-            isVisible = layerInfo.isVisible,
-            readonly=layerInfo.readonly;
-        if(!style||style.pointStyle!==undefined){
+            isVisible = layerInfo.isVisible;
+       if(!style){
             style=SuperMap.Cloud.MapViewer.vectorLayerdefaultStyle;
         }
         var vectorLayer;
-        if (readonly) {
-            vectorLayer = new SuperMap.Layer.Vector(title, {
-                style: style,
-                renderers: ["Canvas2", "SVG", "VML"],
-                opacity:opacity,
-                visibility:isVisible
-            });
-            vectorLayer.setOpacity(opacity);
-        } else {
-            vectorLayer = new SuperMap.Layer.Vector(title, {
-                style: style,
-                visibility:isVisible
-            });
-            vectorLayer.setOpacity(opacity);
-        }
+        vectorLayer = new SuperMap.Layer.Vector(title, {
+            style: style,
+            renderers: ["Canvas", "SVG", "VML"],
+            opacity:opacity,
+            visibility:isVisible
+        });
+        this.registerVectorEvent(vectorLayer);
+        vectorLayer.setOpacity(opacity);
+
         return vectorLayer;
+    },
+    /**
+     * Method: registerVectorEvent
+     * 注册矢量图层的点击及鼠标移动事件
+     */
+    registerVectorEvent:function(vectorLayer){
+        var that = this;
+        function clickEventHandler(evt){
+            if(!that.__isSimulating || !vectorLayer.map || (vectorLayer.map && vectorLayer.map.dragging)){
+                return;
+            }
+            evt.xy = {
+                x:evt.clientX || evt.x || (evt.changedTouches && evt.changedTouches[0] && evt.changedTouches[0].clientX) ,
+                y:evt.clientY || evt.y || (evt.changedTouches && evt.changedTouches[0] && evt.changedTouches[0].clientY)
+            };
+            var feature = vectorLayer.getFeatureFromEvent(evt);
+            if(feature){
+                that.selectedFeature = feature;
+            }
+        }
+        vectorLayer.div.addEventListener('click', clickEventHandler);
+        vectorLayer.div.addEventListener('touchend', clickEventHandler);
+        vectorLayer.div.addEventListener('mousemove', function(evt){
+            if(!that.__isSimulating || !vectorLayer.map){
+                return;
+            }
+            evt.xy = {
+                x:evt.clientX || evt.x,
+                y:evt.clientY || evt.y
+            };
+            var feature = vectorLayer.getFeatureFromEvent(evt);
+            if(feature){
+                vectorLayer.map.eventsDiv.style.cursor = 'pointer';
+            }
+        });
+    },
+    /**
+     * 将layerInfo里的cartoCSS属性转换成js对象
+     * method getCartoCSS2Obj
+     * @param cartoCSS
+     * @returns {{isAddFile: *, needTransform: boolean}}
+     */
+    getCartoCSS2Obj : function(cartoCSS) {
+        var isAddFile, needTransform = false;
+        if(cartoCSS.indexOf('}')>-1) {
+            cartoCSS = JSON.parse(cartoCSS);
+            needTransform = cartoCSS.needTransform;
+            isAddFile = cartoCSS.isAddFile;
+        }
+        else {
+            if (cartoCSS === 'needTransform') {
+                needTransform = true;
+                //layerInfo.needTransform = true;
+                isAddFile = false;
+            } else {
+                isAddFile = cartoCSS === 'true';
+            }
+        }
+        return {
+            isAddFile : isAddFile,
+            needTransform : needTransform
+        }
+
+
+    },
+
+    /**
+     * 将excel和csv的数据转换成SuperMap.Feature.Vector
+     * method parseFeatureFromEXCEL
+     * @param rows
+     * @param colTitles
+     * @param isGraphic
+     * @param position
+     * @returns {Array}
+     */
+    parseFeatureFromEXCEL : function(rows, colTitles,isGraphic, position) {
+        var attrArr = this.getAttributesObjFromTable(rows, colTitles);
+        var features = [];
+        for (var i = 0, len = attrArr.length; i < len; i++) {
+            var geometry = new SuperMap.Geometry.Point(attrArr[i][position["lon"]], attrArr[i][position["lat"]]);
+            if(isGraphic) {
+                var pointGraphic = new SuperMap.Graphic(geometry, attrArr[i], null);
+            }
+            else {
+                var pointGraphic = new SuperMap.Feature.Vector(geometry, attrArr[i], null);
+            }
+            features.push(pointGraphic);
+        }
+        return features;
+
+
+    },
+    /**
+     * 将一个geoJson字符串转换成SuperMap.Feature.Vector对象
+     * method parseFeatureFromJson
+     * @param feature
+     */
+    parseFeatureFromJson : function(feature) {
+        var format = new SuperMap.Format.GeoJSON();
+        var features = format.read(feature);
+        //兼容insights数据格式
+        if(features == null) {
+            var content = JSON.parse(feature.replace(/'/, '"'));
+            if(content.isAnalyseResult){
+                content =  content.data.recordsets[0].features;
+            }
+            format = new SuperMap.Format.GeoJSON();
+            features = format.read(content);
+        }
+        for(var i = 0, len = features.length; i < len; i++) {
+            features[i].attributes = features[i].attributes.properties || features[i].attributes;
+        }
+        return features;
+
+    },
+    /**
+     * 通过layerInfo里的url获取文件上传的数据
+     * method getFeatureFromFileAdded
+     * @param layerInfo
+     * @param success
+     * @param failed
+     */
+    getFeatureFromFileAdded : function(layerInfo, success, failed, isGraphic) {
+            var isInTheSameDomain = this.isInTheSameDomain;
+            var url = isInTheSameDomain ? layerInfo.url : layerInfo.url.replace(/.json/, ".jsonp");
+            var options = {
+                url: isGraphic ? url + '?currentPage=1&&pageSize=9999999' : url ,
+                isInTheSameDomain : this.isInTheSameDomain,
+                data:'',
+                method:"GET",
+                success : function(data) {
+                    var jsonObj = isInTheSameDomain ? new SuperMap.Format.JSON().read(data.responseText):data;
+                    success && success(jsonObj);
+                },
+                failed : function(err) {
+                    failed && failed(err);
+                }
+            };
+        SuperMap.Util.committer(options);
+
+
     },
     /**
      * Method: addFeature2VectorLayer
@@ -1150,9 +1619,16 @@ SuperMap.Cloud.MapViewer=SuperMap.Class({
         if(layerInfo.layerType!=="FEATURE_LAYER"||(!layer instanceof SuperMap.Layer.Vector)){
             return;
         }
+        var cartoCSS = layerInfo.cartoCSS;
+        if(cartoCSS) {
+                cartoCSS = this.getCartoCSS2Obj(cartoCSS);
+            var isAddFile= cartoCSS.isAddFile,
+                needTransform = cartoCSS.needTransform;
+        }
+        //兼容改版之前的地图和改版之后地图的两种情况
+        var me = this;
         if (!layerInfo.url) {
-            var
-                features = layerInfo.features,
+            var features = layerInfo.features,
                 tempFeatures = [],
                 tempFeature, geometry, points, tempPoints, point, feature,pIndex,plen;
             if(features) {
@@ -1178,17 +1654,52 @@ SuperMap.Cloud.MapViewer=SuperMap.Class({
                         geometry = new SuperMap.Geometry.Polygon([new SuperMap.Geometry.LinearRing(tempPoints)]);
                     }
                     var style = typeof tempFeature.style !== "undefined" ? JSON.parse(tempFeature.style) : null;
-                    feature = new SuperMap.Feature.Vector(geometry, tempFeature.attributes, style);
-                    feature.id = tempFeature.id;
+                    var attributes = tempFeature.attributes,attrs = {};
+                    if(attributes.key && attributes.key.length !== undefined && attributes.properties){
+                        for(var key in attributes.key){
+                            key = attributes.key[key];
+                            attrs[key.replace('_smiportal_','')] = attributes.properties[key];
+                        }
+                    }else{
+                        attrs.title = attributes.title;
+                        attrs.description = attributes.description;
+                    }
+                    feature = new SuperMap.Feature.Vector(geometry, attrs, style);
                     tempFeatures.push(feature);
                 }
                 layer.addFeatures(tempFeatures);
             }
-        } else {
+        } else if(isAddFile && layerInfo.url){
+            this.getFeatureFromFileAdded(layerInfo, function(data) {
+                var features = me.parseFeatureFromJson(data.content);
+                for(var i= 0,len = features.length; i < len; i++) {
+                    features[i].attributes = features[i].attributes.properties ;
+                    if(features[i].geometry instanceof SuperMap.Geometry.Point) {
+                        SuperMap.Cloud.MapViewer.PointStyle.externalGraphic = me.rootURL + 'static/portal/images/markers/mark_red.png'
+                        features[i].style = layerInfo.style.pointStyle || SuperMap.Cloud.MapViewer.PointStyle;
+                    }
+                    else if(features[i].geometry instanceof SuperMap.Geometry.Polygon) {
+                        features[i].style = layerInfo.style.polygonStyle || SuperMap.Cloud.MapViewer.PolygonStyle;
+                    }
+                    else {
+                        features[i].style = layerInfo.style.lineStyle || SuperMap.Cloud.MapViewer.LineStyle;
+                    }
+                }
+                var newEpsgCode = me.mapInfo && me.mapInfo.epsgCode ,
+                    oldEpsgCode = layerInfo.prjCoordSys && layerInfo.prjCoordSys.epsgCode;
+                if(needTransform){
+                    me.changeFeatureLayerEpsgCode(oldEpsgCode,newEpsgCode,layer,features,function(features){layer.addFeatures(features);});
+                }else {
+                    layer.addFeatures(features);
+                }
+            }, function(err) {console.log(err)});
+
+        }else {
             var url = layerInfo.url,
                 credential = layerInfo.credential,
                 datasourceName = layerInfo.name,
                 datasetNames = layerInfo.features;
+
             style = layerInfo.style;
             for (var setNameIndex = 0,dlen=datasetNames.length; setNameIndex < dlen; setNameIndex++) {
                 var dataset = datasetNames[setNameIndex];
@@ -1209,7 +1720,11 @@ SuperMap.Cloud.MapViewer=SuperMap.Class({
                                 }
                                 addedFeatures.push(feature);
                             }
-                            layer.addFeatures(addedFeatures);
+                            var newEpsgCode = me.mapInfo && me.mapInfo.epsgCode,
+                                oldEpsgCode = layerInfo.prjCoordSys && layerInfo.prjCoordSys.epsgCode;
+                            me.changeFeatureLayerEpsgCode(oldEpsgCode,newEpsgCode,layer,addedFeatures,function(features){
+                                layer.addFeatures(features);
+                            });
                         }
                     });
                 }
@@ -1272,25 +1787,56 @@ SuperMap.Cloud.MapViewer=SuperMap.Class({
             layer.redraw();
         }
     },
+
     /**
-     * Method: addFeature2ThemeLayer
+     * Method: addFeature2GraphicLayer
      * 根据json数据重新生成feature，并添加到大数据专题图层上
      * */
     addFeature2GraphicLayer: function (layerInfo,layer) {
-        var features = layerInfo.features,tempFeature,geometry, graphicsAttrArray = [], graphicsArray=[];
-        //给每个要素添加样式
-        for(var i= 0,len = features.length; i<len; i++) {
-            tempFeature = features[i];
-            geometry = new SuperMap.Geometry.Point(tempFeature.geometry.points[0].x, tempFeature.geometry.points[0].y);
-            var pointGraphic = new SuperMap.Graphic(geometry, tempFeature.attributes, null);
-            var graphicsAttr={
-                attributes: pointGraphic.attributes,
-                id: pointGraphic.id
-            };
-            graphicsAttrArray.push(graphicsAttr);
-            graphicsArray.push(pointGraphic);
+        var features = layerInfo.features,tempFeature,geometry, graphicsAttrArray = [], graphicsArray=[], url = layerInfo.url;
+        if(layerInfo.cartoCSS) {
+            var transObj = this.getCartoCSS2Obj(layerInfo.cartoCSS);
         }
-        layer.addGraphics(graphicsArray);
+        var me = this, position = JSON.parse(layerInfo.datasourceName);
+        if(url && transObj && transObj.isAddFile) {
+            this.getFeatureFromFileAdded(layerInfo, function(data) {
+                var features ;
+                if(data.type==='EXCEL' || data.type==='CSV') {
+                    features = me.parseFeatureFromEXCEL.apply(me,[data.content.rows, data.content.colTitles, true, position]);
+                }
+                else {
+                    features = me.parseFeatureFromJson(data.content);
+                }
+                var newEpsgCode = me.mapInfo && me.mapInfo.epsgCode,
+                    oldEpsgCode = layerInfo.prjCoordSys && layerInfo.prjCoordSys.epsgCode;
+                if(transObj.needTransform) {
+                    me.changeFeatureLayerEpsgCode(oldEpsgCode,newEpsgCode,layer,features,function(features){
+                        layer.addGraphics(features);
+                    });
+                }
+                else {
+                    layer.addGraphics(features)
+                }
+
+
+            }, function(err) {console.log(err)}, true);
+
+        }
+        //给每个要素添加样式
+        else {
+            for (var i = 0, len = features.length; i < len; i++) {
+                tempFeature = features[i];
+                geometry = new SuperMap.Geometry.Point(tempFeature.geometry.points[0].x, tempFeature.geometry.points[0].y);
+                var pointGraphic = new SuperMap.Graphic(geometry, tempFeature.attributes, null);
+                var graphicsAttr = {
+                    attributes: pointGraphic.attributes,
+                    id: pointGraphic.id
+                };
+                graphicsAttrArray.push(graphicsAttr);
+                graphicsArray.push(pointGraphic);
+            }
+            layer.addGraphics(graphicsArray);
+        }
     },
     /**
      * Method: getFeaturesBySQL
@@ -1318,12 +1864,14 @@ SuperMap.Cloud.MapViewer=SuperMap.Class({
                         return;
                     }
                     processCompleted && processCompleted(getFeaturesEventArgs);
+                    that.events.triggerEvent("getfeaturesuccess");
                 },
                 processFailed: function (e) {
                     if(!that.actived){
                         return;
                     }
                     processFailed && processFailed(e);
+                    that.events.triggerEvent("getfeaturefailed");
                 }
             }
         };
@@ -1376,7 +1924,7 @@ SuperMap.Cloud.MapViewer=SuperMap.Class({
         }
         function clickEventHandler(){
             var marker=this;
-            that.events.triggerEvent("markerClicked",marker);
+            that.selectedMarker = marker;
         }
     },
 
@@ -1437,7 +1985,7 @@ SuperMap.Cloud.MapViewer=SuperMap.Class({
             animatorVector.renderer.tail=tail;
             animatorVector.renderer.glint=glint;
         }
-        this.addFeaturesByJson(datasetsInfo,style,animatorVector,credential);
+        this.addFeaturesByJson(layerInfo,datasetsInfo,style,animatorVector,credential);
         return animatorVector;
     },
 
@@ -1460,6 +2008,42 @@ SuperMap.Cloud.MapViewer=SuperMap.Class({
         }
         return layer;
     },
+    /**
+     * Method: registerThemeEvent
+     * 注册专题图层的点击及鼠标移动事件
+     */
+    registerThemeEvent:function(themeLayer){
+        var that = this;
+        function clickEventHandler(evt){
+            if(!that.__isSimulating || !themeLayer.map || (themeLayer.map && themeLayer.map.dragging)){
+                return;
+            }
+            var feature;
+            if(evt.target && evt.target.refDataID){
+                var xy = {
+                    x: evt.event.clientX || evt.event.zrenderX,
+                    y: evt.event.clientY || evt.event.zrenderY
+                };
+                feature = themeLayer.getFeatureById(evt.target.refDataID);
+            }
+            if(feature){
+                that.selectedFeature = feature;
+            }
+        }
+        themeLayer.on('click', clickEventHandler);
+        themeLayer.on('touchend', clickEventHandler);
+        themeLayer.on('mousemove', function(evt){
+            if(!that.__isSimulating || !themeLayer.map){
+                return;
+            }
+            if(evt.target && evt.target.refDataID){
+                var feature = themeLayer.getFeatureById(evt.target.refDataID);
+                if(feature){
+                    themeLayer.map.eventsDiv.style.cursor = 'pointer';
+                }
+            }
+        });
+    },
 
     /**
      * Method: createBaseLayer
@@ -1472,24 +2056,23 @@ SuperMap.Cloud.MapViewer=SuperMap.Class({
         featureStyle = style.pointStyle;
         if(vectorType === "LINE") {
             featureStyle.fill = false;
+        }else{
+            featureStyle.fill = true;
+        }
+        if(featureStyle.unicode){
+            featureStyle.isUnicode = true;
+            if(featureStyle.fontFamily === 'supermapol-icons'){
+                featureStyle.fontFamily = 'supermap-icon'
+            }
         }
         var vector = new SuperMap.Layer.Vector(title,{
             clipFeature:false,
             style:featureStyle,
-            visibility:isVisible
+            visibility:isVisible,
+            renderers: ["Canvas", "SVG", "VML"]
         });
+        this.registerVectorEvent(vector);
         vector.setOpacity(opacity);
-        //添加之前将上次的注销
-        that.vectorSelectFeature = new SuperMap.Control.SelectFeature(vector, {
-            callbacks:{
-                click:function (currentFeature) {
-                    that.events.triggerEvent("vectorfeatureclicked",currentFeature);
-                }
-            },
-            repeat: true
-        });
-        that.map.addControl(that.vectorSelectFeature);
-        that.vectorSelectFeature.activate();
         return vector;
     },
     /**
@@ -1510,21 +2093,26 @@ SuperMap.Cloud.MapViewer=SuperMap.Class({
         var unique = new SuperMap.Layer.Unique(title,{
             visibility:isVisible
         });
+        this.registerThemeEvent(unique);
         unique.setOpacity(opacity);
         unique.style = layerInfo.style.pointStyle;
         if(vectorType === "LINE") {
             unique.style.fill = false;
+        }else{
+            unique.style.fill = true;
         }
         unique.style.stroke = true;
         unique.themeField = themeField;
         unique.styleGroups = styleGroups;
         var that = this;
-        unique.on('click',function (event) {
+        function clickEventHandler(event) {
            if(event.target && event.target.refDataID) {
                var currenFeature = unique.getFeatureById(event.target.refDataID);
                that.events.triggerEvent("uniquefeatureclicked",currenFeature,unique);
            }
-        });
+        }
+        unique.on('click',clickEventHandler);
+        unique.on('touchend',clickEventHandler);
         return unique;
     },
 
@@ -1539,6 +2127,8 @@ SuperMap.Cloud.MapViewer=SuperMap.Class({
             featureStyle = layerInfo.style.pointStyle;
         if(vectorType === "LINE") {
             featureStyle.fill = false;
+        }else{
+            featureStyle.fill = true;
         }
         //组成styleGroup
         for(var i=0; i<settings.length; i++) {
@@ -1551,18 +2141,21 @@ SuperMap.Cloud.MapViewer=SuperMap.Class({
         var range = new SuperMap.Layer.Range(title,{
             visibility:isVisible
         });
+        this.registerThemeEvent(range);
         range.setOpacity(opacity);
         range.style = layerInfo.style.pointStyle;
         range.style.stroke = true;
         range.themeField = themeField;
         range.styleGroups = styleGroups;
         var that = this;
-        range.on('click',function (event) {
+        function clickEventHandler(event) {
             if(event.target && event.target.refDataID) {
                 var currenFeature = range.getFeatureById(event.target.refDataID);
                 that.events.triggerEvent("rangefeatureclicked",currenFeature);
             }
-        });
+        }
+        range.on('click',clickEventHandler);
+        range.on('touchend',clickEventHandler);
         return range;
     },
 
@@ -1578,8 +2171,11 @@ SuperMap.Cloud.MapViewer=SuperMap.Class({
             visibility:isVisible
         });
         heat.setOpacity(opacity);
+        var featureStyle = layerInfo.style.pointStyle;
         if(vectorType === "LINE") {
             featureStyle.fill = false;
+        }else{
+            featureStyle.fill = true;
         }
         heat.colors = colors;
         heat.style = layerInfo.style.pointStyle;
@@ -1602,6 +2198,7 @@ SuperMap.Cloud.MapViewer=SuperMap.Class({
      * 根据json数据重新生成feature，并添加到标签图层上
      * */
     createLableLayer: function(layerInfo,themeSettings) {
+        var style = layerInfo.style, featureSytle = style.pointStyle;
         var labelFont = themeSettings.labelFont, labelColor = themeSettings.labelColor;
         //传过来的只有可以改变的三个属性
         var title=layerInfo.title;
@@ -1611,9 +2208,9 @@ SuperMap.Cloud.MapViewer=SuperMap.Class({
             fontSize:"14px",
             fill: true,
             fillColor: "#FFFFFF",
-            fillOpacity: 1,
+            fillOpacity: 0.7,
             stroke: true,
-            strokeColor:"#8B7B8B",
+            strokeColor:"#aaaaaa",
             fontFamily:"Microsoft YaHei"
         };
         var labelStrategy = new SuperMap.Strategy.GeoText();
@@ -1624,9 +2221,37 @@ SuperMap.Cloud.MapViewer=SuperMap.Class({
         if(labelColor) {
             labelStrategy.style.fontColor = labelColor;
         }
-        return new SuperMap.Layer.Vector(title,{strategies: [labelStrategy]});
+        return new SuperMap.Layer.Vector(title+ SuperMap.i18n("lableTitle"),{strategies: [labelStrategy]});
     },
+    /**
+     * Method: getSQLFromFilter
+     * 文件上传时通过filter属性获得一个完整的sql语句 暂时不支持比较复杂的如Like语句
+     * @param filter
+     * @returns {*}
+     */
+    getSQLFromFilter : function(filter) {
 
+        if(filter === '') {
+            return 'select * from json'
+        }
+        else {
+            filter = filter.replace(/=/g, '==').replace(/and|AND/g, '&&').replace(/or|OR/g, '||').replace(/>==/g, '>=').replace(/<==/g, '<=');
+            return 'select * from json where (' + filter + ')';
+        }
+    },
+    getAttributesObjFromTable : function(cols, colTitles) {
+        if(cols.length <0 || colTitles.length < 0) {return;}
+        var attrArr = [];
+        for (var i = 0; i < cols.length; i++) {
+            var obj = {};
+            for (var j = 0; j < colTitles.length; j++) {
+                obj[colTitles[j]] = cols[i][j]
+            }
+            attrArr.push(obj);
+        }
+        return attrArr;
+
+    },
     /**
      * Method: addFeature2ThemeLayer
      * 根据json数据重新生成feature，并添加到专题图层上
@@ -1635,21 +2260,65 @@ SuperMap.Cloud.MapViewer=SuperMap.Class({
         if(layerInfo.layerType!=="FEATURE_LAYER" || layerInfo.identifier !== "THEME"){
             return;
         }
-        var isAddFile = layerInfo.cartoCSS,isRestData = !!layerInfo.datasourceName;
-        isAddFile = isAddFile && isAddFile !=='fromWeb' && isAddFile !== 'fromSample'
+        var me = this;
+        var isRestData = !!layerInfo.datasourceName;
+        var cartoCSS = layerInfo.cartoCSS;
+        if(cartoCSS) {
+            var needTransform = this.getCartoCSS2Obj(cartoCSS).needTransform;
+            var isAddFile = this.getCartoCSS2Obj(cartoCSS).isAddFile;
+        }
+
         var url = layerInfo.url, epsgCode = layerInfo.prjCoordSys.epsgCode,subLayers,subLayer,layerName,credential = layerInfo.credential,
-            themeSettings = layerInfo.themeSettings,filter = themeSettings.filter,features = layerInfo.features;
-        if(isAddFile && features){
-            var newFeautures = [];
-            for(var i= 0,len=features.length;i<len;i++){
-                var feature = features[i];
-                var lon = feature.geometry.points[0].x,
-                    lat = feature.geometry.points[0].y;
-                var point = new SuperMap.Geometry.Point(lon,lat);
-                var vector = new SuperMap.Feature.Vector(point,feature.attributes,feature.style);
-                newFeautures.push(vector);
+            themeSettings = layerInfo.themeSettings,filter = themeSettings.filter;
+
+        if(isAddFile){
+            var position = JSON.parse(layerInfo.datasourceName);
+            var sql = this.getSQLFromFilter(filter);
+            if(url) {
+                this.getFeatureFromFileAdded(layerInfo, function(data) {
+                    var sFeaturesArr = [], features, result;
+                    if(data.type === 'EXCEL' || data.type === 'CSV') {
+                           features = me.parseFeatureFromEXCEL.apply(me, [data.content.rows, data.content.colTitles, false, position]);
+                        for (var x = 0, len = features.length; x < len; x++) {
+                            result = jsonsql.query(sql, {attr: features[x].attributes});
+                            if (result.length > 0) {
+                                sFeaturesArr.push(features[x])
+                            }
+                        }
+                    }
+                    else {
+                        features = me.parseFeatureFromJson(data.content);
+                        for(var i = 0, length = features.length; i < length; i ++) {
+                            result = jsonsql.query(sql, {attr : features[i].attributes});
+                            if(result.length > 0) sFeaturesArr.push(features[i]);
+                        }
+                    }
+                    var newEpsgCode = me.mapInfo && me.mapInfo.epsgCode,
+                        oldEpsgCode = layerInfo.prjCoordSys && layerInfo.prjCoordSys.epsgCode;
+                    if(needTransform){
+                        me.changeFeatureLayerEpsgCode(oldEpsgCode,newEpsgCode,layer,sFeaturesArr,function(features){addFeatures(features);});
+                    }else{
+                        addFeatures(sFeaturesArr);
+                    }
+
+
+                }, function(err){});
             }
-            layer.addFeatures(newFeautures);
+            else {
+                var newFeautures = [],sql = this.getSQLFromFilter(filter),features = layerInfo.features;
+                for (var i = 0, len = features.length; i < len; i++) {
+                    var feature = features[i];
+                    var sqlResult = jsonsql.query(sql, {attr : feature.attributes});
+                    if(sqlResult.length > 0) {
+                        var lon = feature.geometry.points[0].x,
+                            lat = feature.geometry.points[0].y;
+                        var point = new SuperMap.Geometry.Point(lon, lat);
+                        var vector = new SuperMap.Feature.Vector(point, feature.attributes, feature.style);
+                        newFeautures.push(vector);
+                    }
+                }
+                addFeatures(newFeautures);
+            }
         }else if(isRestData){
             var dataSourceName = layerInfo.datasourceName;
 
@@ -1669,7 +2338,16 @@ SuperMap.Cloud.MapViewer=SuperMap.Class({
                         feature = features[fi];
                         addedFeatures.push(feature);
                     }
-                    layer.addFeatures(addedFeatures);
+                    var newEpsgCode = me.mapInfo && me.mapInfo.epsgCode,
+                        oldEpsgCode = layerInfo.prjCoordSys && layerInfo.prjCoordSys.epsgCode;
+
+                    if(needTransform){
+                        me.changeFeatureLayerEpsgCode(oldEpsgCode,newEpsgCode,layer,addedFeatures,function(features){
+                            addFeatures(features);
+                        });
+                    }else{
+                        addFeatures(features);
+                    }
                 }
             })
         }else{
@@ -1680,28 +2358,48 @@ SuperMap.Cloud.MapViewer=SuperMap.Class({
                 subLayer = subLayers;
             }
             layerName = subLayer && subLayer.name;
-            this.queryFeaturesBySQL(url,credential,layerName,filter,epsgCode,layer,layerInfo);
+            var oldEpsgCode = layerInfo.prjCoordSys && layerInfo.prjCoordSys.epsgCode
+            this.queryFeaturesBySQL(url,credential,layerName,filter,needTransform ?'':oldEpsgCode,function(features){
+                var newEpsgCode = me.mapInfo && me.mapInfo.epsgCode;
+                if(needTransform){
+                    me.changeFeatureLayerEpsgCode(oldEpsgCode,newEpsgCode,layer,features,function(features){
+                        addFeatures(features);
+                    });
+                }else{
+                    addFeatures(features);
+                }
+            });
+        }
+        function addFeatures(features){
+            if(layer.labelLayer) {
+                me.addFeature2LableLayer(layerInfo,features,layer.labelLayer);
+            }
+            layer.addFeatures(features);
         }
     },
     /**
      * Method: addFeature2LableLayer
      * 根据json数据重新生成feature，并添加到专题图层上
      * */
-    addFeature2LableLayer: function(layerInfo,layer) {
-        var features = layerInfo.features, isAddFile = layerInfo.cartoCSS;
+    addFeature2LableLayer: function(layerInfo,features,labelLayer) {
         var stylInfo = layerInfo.styleString && JSON.parse(layerInfo.styleString);
         var themeSettings = layerInfo.themeSettings, labelField = themeSettings.labelField,
             vectorType = themeSettings.vectorType;
-        var style = layer.strategies[0].style;
-        if(isAddFile && features) {
+        var style = labelLayer.strategies[0].style;
+        if(features) {
             //文件上传方式
             var labelFeatures = [],lon,lat;
             style.labelAlign = 'ct';
             for(var i=0; i<features.length; i++) {
                 if(vectorType === 'POINT') {
                     var geometry = features[i].geometry;
-                    lon = geometry.points[0].x;
-                    lat = geometry.points[0].y;
+                    if(geometry instanceof SuperMap.Geometry.MultiPoint){
+                        lon = geometry.points[0].x;
+                        lat = geometry.points[0].y;
+                    }else{
+                        lon = geometry.x;
+                        lat = geometry.y;
+                    }
                 } else if(vectorType === 'LINE') {
                     //一条线所有顶点的数量
                     var length,index;
@@ -1730,15 +2428,17 @@ SuperMap.Cloud.MapViewer=SuperMap.Class({
                 this.setLabelOffset(vectorType,stylInfo,features[i],style);
                 var text = features[i].attributes[labelField];
                 //该字段没有值，默认为无内容
-                if(!text || text === '') {
+                var regu = "^[ ]+$";
+                var re = new RegExp(regu);
+                if(!text || text == '' || re.test(text)) {
                     text = SuperMap.i18n("noContent");
                 }
                 var lonLat = new SuperMap.LonLat(lon,lat);
                 var geoText = new SuperMap.Geometry.GeoText(lonLat.lon, lonLat.lat,text);
-                var geotextFeature = new SuperMap.Feature.Vector(geoText);
-                labelFeatures.push(geotextFeature);
+                var geoTextFeature = new SuperMap.Feature.Vector(geoText);
+                labelFeatures.push(geoTextFeature);
             }
-            layer.addFeatures(labelFeatures);
+            labelLayer.addFeatures(labelFeatures);
         }
     },
     /**
@@ -1749,8 +2449,9 @@ SuperMap.Cloud.MapViewer=SuperMap.Class({
         if(vectorType === 'POINT') {
             pointRadius = stylInfo.pointStyle.pointRadius || 0;
             strokeWidth = stylInfo.pointStyle.strokeWidth || 0;
+            fontSize = parseInt(stylInfo.pointStyle.fontSize) || 0;
             stategeStyle.labelXOffset = 0;
-            stategeStyle.labelYOffset = 25 + (pointRadius + strokeWidth);
+            stategeStyle.labelYOffset = stylInfo.pointStyle.unicode ? 20 + fontSize : 25 + (pointRadius + strokeWidth);
         } else {
             return;
         }
@@ -1795,19 +2496,22 @@ SuperMap.Cloud.MapViewer=SuperMap.Class({
      * Method: queryFeaturesBySQL
      * 根据图层保存的url查询要素
      * */
-    queryFeaturesBySQL: function (url,credential,layerName,filter,epsgCode,layer,layerInfo) {
+    queryFeaturesBySQL: function (url,credential,layerName,filter,epsgCode,processCompleted, processFailed) {
         var that = this;
         var queryParam,queryBySQLParams,queryBySQLService;
         queryParam = new SuperMap.REST.FilterParameter({
             name:layerName,
             attributeFilter:filter
         });
-        queryBySQLParams = new SuperMap.REST.QueryBySQLParameters({
+        var params = {
             queryParams:[queryParam],
-            prjCoordSys:{
+        }
+        if(epsgCode){
+            params.prjCoordSys = {
                 epsgCode:epsgCode
             }
-        });
+        }
+        queryBySQLParams = new SuperMap.REST.QueryBySQLParameters(params);
         var options = {
             eventListeners:{
                 "processCompleted": function (getFeaturesEventArgs) {
@@ -1815,30 +2519,15 @@ SuperMap.Cloud.MapViewer=SuperMap.Class({
                     var recordset = recordsets && recordsets[0];
                     if(recordset && recordset.features) {
                         features =recordset.features;
-                        if(features <= 0) {
+                        if(!features || features.length <= 0) {
                             return;
-                        } else if(layer.labelLayer) {
-                            var stylInfo = layerInfo.styleString && JSON.parse(layerInfo.styleString);
-                            var themeSettings = layerInfo.themeSettings,labelField = themeSettings.labelField,
-                                vectorType = themeSettings.vectorType, labelFeatures = [];
-                            var style = layer.labelLayer.strategies[0].style, me = this;
-                            for(var i=0; i<features.length; i++) {
-                                //设置标签的偏移量
-                                that.setLabelOffset(vectorType,stylInfo,features[i],style);
-                                var text = features[i].attributes[labelField];
-                                //获取标签的坐标
-                                var lonlat = that.getLabelLonlat(vectorType,features[i]);
-                                var geoText = new SuperMap.Geometry.GeoText(lonlat.lon, lonlat.lat,text);
-                                var geotextFeature = new SuperMap.Feature.Vector(geoText);
-                                labelFeatures.push(geotextFeature);
-                            }
-                            //添加标签
-                            layer.labelLayer.addFeatures(labelFeatures);
                         }
-                        layer.addFeatures(features);
+                        processCompleted && processCompleted.call(that,features);
+                        that.events.triggerEvent("queryfeaturesuccess");
                     }
                 },
                 "processFailed": function () {
+                    processFailed && processFailed.call(that,features);
                     that.events.triggerEvent("getfeaturefaild");
                 }
             }
@@ -1854,10 +2543,11 @@ SuperMap.Cloud.MapViewer=SuperMap.Class({
      * Method: addFeaturesByJson
      * 根据图层保存的数据集信息查询要素
      * */
-    addFeaturesByJson:function(datasetsInfo,style,layer,credential){
+    addFeaturesByJson:function(layerInfo,datasetsInfo,style,layer,credential){
         if(!datasetsInfo||datasetsInfo.length<=0){
             return;
         }
+        var me = this;
         for(var di= 0,dlen=datasetsInfo.length;di<dlen;di++){
             var datasetInfo=JSON.parse(datasetsInfo[di]);
             var url=datasetInfo.url,
@@ -1886,8 +2576,12 @@ SuperMap.Cloud.MapViewer=SuperMap.Class({
                         }
                         addedFeatures.push(feature);
                     }
-                    layer.addFeatures(addedFeatures);
-                    layer.animator.start();
+                    var newEpsgCode = me.mapInfo && me.mapInfo.epsgCode,
+                        oldEpsgCode = layerInfo.prjCoordSys && layerInfo.prjCoordSys.epsgCode;
+                    me.changeFeatureLayerEpsgCode(oldEpsgCode,newEpsgCode,layer,addedFeatures,function(features){
+                        layer.addFeatures(features);
+                        layer.animator.start();
+                    });
                 }
             })
         }
@@ -1940,7 +2634,7 @@ SuperMap.Cloud.MapViewer=SuperMap.Class({
             return;
         }
         var urls = url.split('?'),credential;
-        if(urls[1]){
+        if(urls[0] && urls[1]){
             var params = urls[1].split('&');
             for(var i= 0,len = params.length;i<len;i++){
                 var param = params[i].split('=');
@@ -1949,7 +2643,173 @@ SuperMap.Cloud.MapViewer=SuperMap.Class({
                     layerInfo.credential = credential;
                 }
             }
+            layerInfo.url = urls[0];
         }
+    },
+    /**
+     * 对要素图层和专题图层进行坐标转换
+     * @param oldEpsgCode
+     * @param newEpsgCode
+     * @param layer
+     * @param features
+     * @param success
+     * @returns {boolean}
+     */
+    changeFeatureLayerEpsgCode: function(oldEpsgCode,newEpsgCode,layer,features,success){
+        var me = this, i,len;
+        var points = [];
+        if(!oldEpsgCode || !newEpsgCode){
+            return;
+        }
+        if(features && features.length > 0){
+            for(i = 0,len = features.length;i<len;i++){
+                var feature = features[i];
+                var geometry = feature.geometry;
+                var vertices = geometry.getVertices();
+                points = points.concat(vertices);
+            }
+            oldEpsgCode = 'EPSG:' + oldEpsgCode, newEpsgCode = 'EPSG:'+newEpsgCode;
+            me.coordsTransform(oldEpsgCode, newEpsgCode, points, function(layer,features){
+                return function(newCoors){
+                    var start = 0,len = newCoors.length;
+                    for(i= start;i<len;i++){
+                        var point = points[i],coor = newCoors[i];
+                        point.x = coor.x;
+                        point.y = coor.y;
+                        point.calculateBounds();
+                    }
+                    for(i = 0,len = features.length;i<len;i++){
+                        var feature = features[i];
+                        var geometry = feature.geometry;
+                        if(geometry.components){
+                            me.calculateComponents(geometry.components);
+                        }
+                        geometry.calculateBounds();
+                    }
+                    success && success.call(me,features);
+                }
+            }(layer,features));
+        }
+        return true;
+    },
+    calculateComponents: function(components){
+        if(components){
+            if(components.components){
+                this.calculateComponents(components.components);
+            }else{
+                for(var i= 0,len=components.length;i<len;i++){
+                    var component = components[i];
+                    if(component.components){
+                        this.calculateComponents(component.components)
+                    }
+                    component.calculateBounds();
+                }
+            }
+        }
+    },
+    /**
+     * 坐标转换接口
+     * @param fromEpsg
+     * @param toEpsg
+     * @param point
+     * @param success
+     */
+    coordsTransform: function (fromEpsg, toEpsg, point, success) {
+        var newCoord;
+        var from = SuperMap.Cloud.MapViewer.SERVER_TYPE_MAP[fromEpsg], to = SuperMap.Cloud.MapViewer.SERVER_TYPE_MAP[toEpsg];
+        if(fromEpsg === toEpsg || !from || !to){
+            if(point && point.length !== undefined){
+                newCoord = [];
+                for(var i= 0,len=point.length;i<len;i++){
+                    var coor = {x:point[i].x,y:point[i].y};
+                    newCoord.push(coor);
+                }
+            }else{
+                newCoord = {x:point.x,y:point.y};
+            }
+            if (success) {
+                success.call(this, newCoord);
+            }
+        }else{
+            var mercator = SuperMap.Cloud.MapViewer.SERVER_TYPE_MAP['EPSG:3857'], wgs84 = SuperMap.Cloud.MapViewer.SERVER_TYPE_MAP['EPSG:4326'];
+            if((from === mercator || from === wgs84) && (to === mercator || to === wgs84)){
+                this.projTransform(fromEpsg, toEpsg, point,success);
+            }else{
+                var convertType = from + '_' + to;
+                this.postTransform(convertType,point,success);
+            }
+        }
+    },
+    projTransform: function (fromEpsg, toEpsg, point,success) {
+        var newCoor,me = this;
+        if(!proj4){
+            return;
+        }
+        if(point && point.length !== undefined){
+            newCoor = [];
+            for(var i= 0,len=point.length;i<len;i++){
+                var coor = proj4(fromEpsg, toEpsg, [point[i].x,point[i].y]);
+                newCoor.push({x:coor[0],y:coor[1]});
+            }
+        }else{
+            newCoor = proj4(fromEpsg, toEpsg, [point.x,point.y]);
+            newCoor = {x:newCoor[0],y:newCoor[1]};
+        }
+        if (success) {
+            me.events.triggerEvent("coordconvertsuccess",newCoor);
+            success.call(me, newCoor);
+        }
+    },
+    postTransform: function (convertType, point,success) {
+        var me = this,epsgArray = [];
+        if(!convertType){
+            return success.call(me,null);
+        }
+        if(point && point.length !== undefined){
+            for(var i = 0,len=point.length;i<len;i++){
+                epsgArray.push({x:point[i].x,y:point[i].y});
+            }
+        }else{
+            epsgArray = [{x:point.x,y:point.y}];
+        }
+        if(epsgArray.length === 0) {
+            return success.call(me,null);
+        }
+        var postData = {
+            "convertType": convertType,
+            "points":epsgArray
+        };
+        var url = this.url+"coordconvert.json";
+        postData = JSON.stringify(postData);
+        var options = {
+            url:url,
+            isInTheSameDomain:true,
+            data:postData,
+            method:"POST",
+            success:function (success) {
+                return function (res) {
+                    if (success) {
+                        var newCoors = JSON.parse(res.responseText);
+                        if(!point && point.length !== undefined){
+                            newCoors = newCoors[0];
+                        }
+                        me.events.triggerEvent("coordconvertsuccess",newCoors);
+                        success.call(me, newCoors);
+                    }
+                }
+            }(success),
+            failure:function(err){
+                if(!me.actived){
+                    return;
+                }
+                me.events.triggerEvent("coordconvertfailed",err);
+            },
+            scope:this
+        };
+        if(!SuperMap.Util.isInTheSameDomain (url) && this.proxy){
+            options.proxy = this.proxy;
+        }
+        SuperMap.Util.committer(options);
     },
 
     CLASS_NAME:"SuperMap.Cloud.MapViewer"
@@ -1963,6 +2823,34 @@ SuperMap.Cloud.MapViewer.vectorLayerdefaultStyle = {
     strokeWidth: 1.5,
     strokeLinecap: "round",
     strokeDashstyle: "solid"
+};
+SuperMap.Cloud.MapViewer.LineStyle = {
+    fill:false,
+    stroke: true,
+    strokeColor : "#3498db",
+    strokeOpacity : 1,
+    strokeWidth : 5,
+    strokeLinecap : "round",
+    strokeDashstyle : "solid"
+};
+SuperMap.Cloud.MapViewer.PolygonStyle = {
+    fill:true,
+    stroke: true,
+    fillColor : "#1abd9c",
+    fillOpacity : 0.5,
+    strokeColor : "#3498db",
+    strokeOpacity : 1,
+    strokeWidth : 3,
+    strokeLinecap : "round",
+    strokeDashstyle : "solid"
+};
+SuperMap.Cloud.MapViewer.PointStyle = {
+
+    graphicWidth : 48,
+    graphicHeight : 43,
+    graphicOpacity : 1,
+    graphicXOffset : -24,
+    graphicYOffset : -43
 };
 SuperMap.Cloud.MapViewer.colorItems=[{
     name:"rainbow",
@@ -2067,3 +2955,14 @@ SuperMap.Cloud.MapViewer.cloudLayerResolution= [156543.033928041, 78271.51696402
     1222.99245256282, 611.496226281409, 305.748113140704, 152.874056570352,
     76.4370282851761, 38.218514142588, 19.109257071294, 9.55462853564701,
     4.77731426782351, 2.38865713391175, 1.19432856695588, 0.597164283477938];
+
+SuperMap.Cloud.MapViewer.SERVER_TYPE_MAP={
+    "EPSG:4326": "WGS84",
+    "EPSG:3857": "MERCATOR",
+    "EPSG:900913": "MERCATOR",
+    "EPSG:102113": "MERCATOR",
+    "EPSG:910101": "GCJ02",
+    "EPSG:910111": "GCJ02MERCATOR",
+    "EPSG:910102": "BD",
+    "EPSG:910112": "BDMERCATOR"
+};

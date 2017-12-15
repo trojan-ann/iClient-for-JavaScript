@@ -206,7 +206,7 @@ DemoDescription['drawGraphics'] = {title: '复杂对象', desc: '此范例展示
 DemoDescription['symbolAvoid'] = {title: '避让区域', desc: '此范例展示标绘对象避让编辑，删除，退出避让编辑。', oper: '1、在地图上选择标号；2、点击避让编辑按钮，绘制避让区域；3、点击退出避让按钮退出避让编辑；4、点击避让编辑按钮进入编辑编辑后，点击删除避让按钮删除避让区域；' }
 DemoDescription['drawRoute'] = {title: '航线', desc: '此范例展示航线的绘制与编辑。', oper: '1、点击绘制航线；2、选择航线节点类型，绘制过程中可以更改类型；3、选中航线节点，点击增加航线节点按钮，可以增加航线节点，选择航线节点类型，增加过程中可以修改节点类型。' }
 DemoDescription['plotPrintScreen'] = {title: '截屏', desc: '此范例展示截取地图和标绘对象并保存为本地图片。', oper: '1、点击截图按钮，可以截取地图和地图上的标绘对象并保存为本地图片。' }
-
+DemoDescription['plotContextMenu'] = {title: '标绘鼠标右键', desc: '此范例展示在标绘图层中鼠标右键获取标绘对象信息。', oper: '1、将鼠标移动到标绘对象上，点击鼠标右键可以获取标绘对象信息。' }
 
 
 

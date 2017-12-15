@@ -45,13 +45,13 @@ SuperMap.REST.GetGridCellInfosService = SuperMap.Class(SuperMap.ServiceBase, {
     eventListeners: null,
 
     /**
-     * APIProperty: datasetName
+     * Property: datasetName
      * {String} 数据集名称。
      */
     datasetName: null,
 
     /**
-     * APIProperty: dataSourceName
+     * Property: dataSourceName
      * {String} 数据源名称。
      */
     dataSourceName: null,
@@ -63,13 +63,13 @@ SuperMap.REST.GetGridCellInfosService = SuperMap.Class(SuperMap.ServiceBase, {
     datasetType: null,
 
     /**
-     * APIProperty: X
+     * Property: X
      * {Number} 要查询的地理位置X轴
      */
     X: null,
 
     /**
-     * APIProperty: X
+     * Property: Y
      * {Number} 要查询的地理位置Y轴
      */
     Y: null,
@@ -131,12 +131,15 @@ SuperMap.REST.GetGridCellInfosService = SuperMap.Class(SuperMap.ServiceBase, {
     /**
      * APIMethod: processAsync
      * 执行服务，查询数据集信息。
+     * Parameters:
+     * params - {<SuperMap.REST.GetGridCellInfosParameter>} 查询参数。
      */
-    processAsync: function(options) {
-        if(options) {
-            SuperMap.Util.extend(this, options);
-        }
+    processAsync: function(params) {
         var me = this;
+        me.datasetName = params.datasetName;
+        me.dataSourceName = params.dataSourceName;
+        me.X = params.X;
+        me.Y = params.Y;
         var end = me.url.substr(me.url.length - 1, 1);
         if (me.isInTheSameDomain) {
             me.url += (end == "/") ? ("datasources/" + me.dataSourceName + "/datasets/" + me.datasetName + ".json") :

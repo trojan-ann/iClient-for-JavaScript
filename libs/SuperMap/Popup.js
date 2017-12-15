@@ -352,6 +352,11 @@ SuperMap.Popup = SuperMap.Class({
                     this.contentSize.h > this.maxSize.h ? this.maxSize.h : this.contentSize.h
                 );
             }
+            if(!!this.minSize) {
+                this.contentSize = new SuperMap.Size(this.contentSize.w < this.minSize.w ? this.minSize.w : this.contentSize.w,
+                    this.contentSize.h < this.minSize.h ? this.minSize.h : this.contentSize.h
+                );
+            }
             this.setSize(this.contentSize);
         }
         this.setBackgroundColor();
@@ -523,6 +528,7 @@ SuperMap.Popup = SuperMap.Class({
                 containerElement: containerElement
             }
         );
+        // var size = this.getSafeContentSize(realSize);
         this.setSize(realSize);
         //ICL_788
         //// is the "real" size of the div is safe to display in our map?

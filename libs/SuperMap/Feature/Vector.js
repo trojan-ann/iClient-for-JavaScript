@@ -380,7 +380,7 @@ SuperMap.Feature.Vector = SuperMap.Class(SuperMap.Feature, {
  * strokeOpacity - {Number} 描边的不透明度(0-1),默认为0.4。
  * strokeWidth - {Number} 像素描边宽度，默认为1。
  * strokeLinecap - {String} strokeLinecap有三种类型butt，round，square，默认为"round"。
- * strokeDashstyle - {String} 有dot,dash,dashot,longdash,longdashdot,solid几种样式，默认为"solid"。
+ * strokeDashstyle - {String} 有dot,dash,dashdot,longdash,longdashdot,solid几种样式，默认为"solid"。
  * graphic - {Boolean} 不需要则设置为false。
  * pointRadius - {Number} 像素点半径，默认为6
  * pointerEvents - {String}  默认为"visiblePainted"。

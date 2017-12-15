@@ -74,6 +74,12 @@ SuperMap.Layer.HeatMapLayer = SuperMap.Class(SuperMap.Layer, {
     boundsminWeight: null,
 
     /**
+     * Property: boundsmaxWeight
+     * {Number} 存储当前bounds内的最大权重值，用于判断用户设置的maxWeight是否有效,如果用户没有设置maxWeight,或者设置无效，即用此属性进行计算
+     */
+    boundsmaxWeight: null,
+
+    /**
      * Property: usefulValue
      * {String} 存储当前有用的最小权重值 minWeight或者 boundsmaxWeight
      */
@@ -384,7 +390,7 @@ SuperMap.Layer.HeatMapLayer = SuperMap.Class(SuperMap.Layer, {
             this.rootCanvas.height = parseInt(size.h);
             this.maxWidth = size.w;
             this.maxHeight = size.h;
-            this.div.style.visibility = "visible";
+            this.div.style.visibility = "";
             if(!zoomChanged){
                 this.updateHeatPoints(bounds);
             }
@@ -457,6 +463,7 @@ SuperMap.Layer.HeatMapLayer = SuperMap.Class(SuperMap.Layer, {
         //this.maxWeight = this.maxWeight ? this.maxWeight : maxTemp;
         //this.minWeight = this.minWeight ? this.minWeight : minTemp;
         this.boundsminWeight =  minTemp;
+        this.boundsmaxWeight =  maxTemp;
 
         //用于判断this.tempValue 是否进行了重新计算
         var ref_tempValue = false;
@@ -479,7 +486,7 @@ SuperMap.Layer.HeatMapLayer = SuperMap.Class(SuperMap.Layer, {
         }
         //1 this.tempValue没有重新赋值；  2 当this.tempValue 重新赋值 并且赋值无效     终极解决，必定有效
         if(!ref_tempValue || (ref_tempValue && this.tempValue < 0) ){
-            this.tempValue = maxTemp - this.boundsminWeight;
+            this.tempValue = this.boundsmaxWeight - this.boundsminWeight;
             this.usefulValue = "boundsminWeight";
         }
     },

@@ -50,7 +50,7 @@ SuperMap.Graphic = SuperMap.Class({
      * (code)
      *  var geometry = new SuperMap.Geometry.Point(-115,10);
      *  var style = {
-     *      iamge: new SuperMap.Style.Circle({
+     *      image: new SuperMap.Style.Circle({
      *       opacity: 1.0,
      *       scale: 1.0,
      *       radius: 6,

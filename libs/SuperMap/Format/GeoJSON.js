@@ -539,7 +539,16 @@ SuperMap.Format.GeoJSON = SuperMap.Class(SuperMap.Format.JSON, {
                                    this.externalProjection);
             }                       
             var geometryType = geometry.CLASS_NAME.split('.')[2];
-            var data = this.extract[geometryType.toLowerCase()].apply(this, [geometry]);
+
+            var data;
+            //标准的geojson 没有LinearRing，但是IClient扩展了此类型   yzy
+            if(geometryType === "LinearRing"){
+                geometryType = "LineString";
+                data = this.extract.linestring.apply(this, [geometry]);
+            }else {
+                data = this.extract[geometryType.toLowerCase()].apply(this, [geometry]);
+            }
+
             var json;
             if(geometryType == "Collection") {
                 json = {

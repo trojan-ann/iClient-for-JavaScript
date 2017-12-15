@@ -39,7 +39,7 @@ SuperMap.Feature.ShapeParameters.Line = SuperMap.Class(SuperMap.Feature.ShapePar
      * strokeWidth - {Number} 线宽度，默认值 1。
      * strokeLinecap - {String} 线帽样式；strokeLinecap 有三种类型 ：“butt", "round", "square"; 默认为"butt"。
      * strokeLineJoin - {String} 线段连接样式；strokeLineJoin 有三种类型： “miter", "round", "bevel"; 默认为"miter"。
-     * strokeDashstyle - {Sting} 虚线类型； strokeDashstyle 有八种类型 ：“dot",“dash",“dashot",“longdash",“longdashdot",“solid", "dashed", "dotted"; 默认值 "solid"。solid 表示实线。
+     * strokeDashstyle - {Sting} 虚线类型； strokeDashstyle 有八种类型 ：“dot",“dash",“dashdot",“longdash",“longdashdot",“solid", "dashed", "dotted"; 默认值 "solid"。solid 表示实线。
      * strokeOpacity - {Number} 线的不透明度。取值范围[0, 1]，默认值 1。
      * shadowBlur - {number} 阴影模糊度，（大于 0 有效; 默认值 0）。
      * shadowColor - {string} 阴影颜色; 默认值 '#000000'。
@@ -50,7 +50,7 @@ SuperMap.Feature.ShapeParameters.Line = SuperMap.Class(SuperMap.Feature.ShapePar
     // * strokeWidth - {Number} 线宽度，默认值 1。
     // * strokeLinecap - {String} 线帽样式；strokeLinecap 有三种类型 ：“butt", "round", "square"; 默认为"butt"。
     // * strokeLineJoin - {String} 线段连接样式；strokeLineJoin 有三种类型： “miter", "round", "bevel"; 默认为"miter"。
-    // * strokeDashstyle - {Sting} 虚线类型； strokeDashstyle 有八种类型 ：“dot",“dash",“dashot",“longdash",“longdashdot",“solid", "dashed", "dotted"; 默认值 "solid"。solid 表示实线。
+    // * strokeDashstyle - {Sting} 虚线类型； strokeDashstyle 有八种类型 ：“dot",“dash",“dashdot",“longdash",“longdashdot",“solid", "dashed", "dotted"; 默认值 "solid"。solid 表示实线。
     // * strokeOpacity - {Number} 线的不透明度。取值范围[0, 1]，默认值 1。
     // * shadowBlur - {number} 阴影模糊度，（大于 0 有效; 默认值 0）。
     // * shadowColor - {string} 阴影颜色; 默认值 '#000000'。
@@ -77,7 +77,7 @@ SuperMap.Feature.ShapeParameters.Line = SuperMap.Class(SuperMap.Feature.ShapePar
      * strokeWidth - {Number} 线宽度，默认值 1。
      * strokeLinecap - {String} 线帽样式；strokeLinecap 有三种类型 ：“butt", "round", "square"; 默认为"butt"。
      * strokeLineJoin - {String} 线段连接样式；strokeLineJoin 有三种类型： “miter", "round", "bevel"; 默认为"miter"。
-     * strokeDashstyle - {Sting} 虚线类型； strokeDashstyle 有八种类型 ：“dot",“dash",“dashot",“longdash",“longdashdot",“solid", "dashed", "dotted"; 默认值 "solid"。solid 表示实线。
+     * strokeDashstyle - {Sting} 虚线类型； strokeDashstyle 有八种类型 ：“dot",“dash",“dashdot",“longdash",“longdashdot",“solid", "dashed", "dotted"; 默认值 "solid"。solid 表示实线。
      * strokeOpacity - {Number} 线的不透明度。取值范围[0, 1]，默认值 1。
      * shadowBlur - {number} 阴影模糊度，（大于 0 有效; 默认值 0）。
      * shadowColor - {string} 阴影颜色; 默认值 '#000000'。

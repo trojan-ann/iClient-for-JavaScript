@@ -216,7 +216,7 @@ SuperMap.LevelRenderer.Shape.SmicBrokenLine = SuperMap.Class(SuperMap.LevelRende
                     );
                 }
             }
-            else if (style.lineType === 'dashot'
+            else if (style.lineType === 'dashdot'
                 || style.lineType === 'longdashdot'
                 ) {
                 var dashLength = (style.lineWidth || 1);
@@ -225,8 +225,8 @@ SuperMap.LevelRenderer.Shape.SmicBrokenLine = SuperMap.Class(SuperMap.LevelRende
                 var pattern3 = dashLength;
                 var pattern4 = dashLength;
 
-                //dashot
-                if(style.lineType === 'dashot'){
+                //dashdot
+                if(style.lineType === 'dashdot'){
                     pattern1 *= 4;
                     pattern2 *= 4;
                     pattern4 *= 4;

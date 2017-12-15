@@ -101,7 +101,7 @@ SuperMap.Cloud.Security=SuperMap.Class({
      * */
     login:function(){
         var success,failed,scope;
-        if(this.type===SuperMap.Cloud.Security.IPROTAL){
+        if(this.type===SuperMap.Cloud.Security.IPORTAL){
             if(arguments.length>=4){
                 var username=arguments[0],
                     password=arguments[1];
@@ -131,7 +131,7 @@ SuperMap.Cloud.Security=SuperMap.Class({
      * */
     logout:function(){
         var success,failed,scope;
-        if(this.type===SuperMap.Cloud.Security.IPROTAL){
+        if(this.type===SuperMap.Cloud.Security.IPORTAL){
             if(arguments.length>=1){
                 success=typeof arguments[0]==="function"?arguments[0]:function(){};
                 failed=typeof arguments[1]==="function"?arguments[1]:function(){};
@@ -158,7 +158,7 @@ SuperMap.Cloud.Security=SuperMap.Class({
      * scope - {Object} iportal注册用）[可选]回调函数的作用域
      * */
     registerUser:function(){
-        if(this.type===SuperMap.Cloud.Security.IPROTAL){
+        if(this.type===SuperMap.Cloud.Security.IPORTAL){
             if(arguments.length>=6){
                 var name=arguments[0],
                     nickname=arguments[1],
@@ -189,7 +189,7 @@ SuperMap.Cloud.Security=SuperMap.Class({
      * scope - {Object} [可选]回调函数的作用域
      * */
     isLogin: function(){
-        if(this.type===SuperMap.Cloud.Security.IPROTAL){
+        if(this.type===SuperMap.Cloud.Security.IPORTAL){
             var success=typeof arguments[0]==="function"?arguments[0]:function(){},
                 failed=typeof arguments[1]==="function"?arguments[1]:function(){},
                 scope=arguments[2]||null;
@@ -211,7 +211,7 @@ SuperMap.Cloud.Security=SuperMap.Class({
      * scope - {Object} [可选]回调函数的作用域
      * */
     getUserInfo:function(){
-        if(this.type===SuperMap.Cloud.Security.IPROTAL){
+        if(this.type===SuperMap.Cloud.Security.IPORTAL){
             if(arguments.length>=3){
                 var username=arguments[0],
                     success=typeof arguments[1]==="function"?arguments[1]:function(){},
@@ -423,5 +423,5 @@ SuperMap.Cloud.Security=SuperMap.Class({
 });
 
 SuperMap.Cloud.Security.SUPERMAPOL="supermapol";
-SuperMap.Cloud.Security.IPROTAL="iportal";
+SuperMap.Cloud.Security.IPORTAL="iportal";
 SuperMap.Cloud.Security.SUPERMAPSSO="https://sso.supermap.com";

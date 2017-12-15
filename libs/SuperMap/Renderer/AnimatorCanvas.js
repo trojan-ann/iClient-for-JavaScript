@@ -1169,7 +1169,12 @@ SuperMap.Renderer.AnimatorCanvas = SuperMap.Class(SuperMap.Renderer, {
 
         this.setCanvasStyle("reset");
         this.canvas.fillStyle = style.fontColor;
-        this.canvas.globalAlpha = style.fontOpacity || 1.0;
+        if( style.fontOpacity>=0 && style.fontOpacity <=1 && style.fontOpacity != null) {
+            this.canvas.globalAlpha = style.fontOpacity;
+        }
+        else {
+            this.canvas.globalAlpha = 1.0;
+        }
         var fontStyle = [style.fontStyle ? style.fontStyle : "normal",
                          "normal", // "font-variant" not supported
                          style.fontWeight ? style.fontWeight : "normal",

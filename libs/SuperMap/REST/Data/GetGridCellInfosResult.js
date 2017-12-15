@@ -7,7 +7,8 @@
  */
 
 /**
- * Class: SuperMap.REST.GetFieldsResult
+
+ * Class: SuperMap.REST.GetGridCellInfosResult
  * 栅格单元信息查询结果。
  */
 SuperMap.REST.GetGridCellInfosResult = SuperMap.Class({

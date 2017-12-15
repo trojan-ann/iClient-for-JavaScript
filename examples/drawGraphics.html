@@ -155,7 +155,6 @@
         function addLayer() {
             map.addLayers([layer, plottingLayer]);
             map.setCenter(new SuperMap.LonLat(104, 35), 3);//定位中国地图
-            //map.setCenter(new SuperMap.LonLat(0, 0),0);
 
             //创建属性面板
             stylePanel = new SuperMap.Plotting.StylePanel("stylePanel");
@@ -201,6 +200,7 @@
             plottingEdit.activate();
 
         }
+
         //干扰波束绘制
         function drawInterferenceBeam(){
             plottingEdit.deactivate();
@@ -225,8 +225,6 @@
                 plottingLayer.createInterferenceBeam(associatedUuid, locationPointWCs, uuid, {}, null, {text:"干扰波束"});
                 plottingEdit.activate();
             }
-
-
         }
 
         //对象标注
@@ -236,28 +234,20 @@
             plottingLayer.events.on({"symbolcreated": symbolCreated});
             //创建点标号
             var locationPointWCs1 = [new SuperMap.Geometry.Point(109, 34)];
-            var symbolSize = new SuperMap.Size(80,80);
+            var symbolSize = new SuperMap.Size(30,30);
             plottingLayer.createSymbolWC(421, 80102,locationPointWCs1,"uuid-sub-Symbol-1", {}, {symbolSize:symbolSize}, {textContent:"指挥所"});
 
             function symbolCreated(evt){
                 plottingLayer.events.un({"symbolcreated": symbolCreated});
                 //创建对象标注
                 var symbolTexts = [];
-                symbolTexts.push(new SuperMap.Plot.SymbolText("陕西省西安市", 0,null));
-                symbolTexts.push(new SuperMap.Plot.SymbolText("天气：晴", 2,null));
-//                symbolTexts.push(new SuperMap.Plot.SymbolText("标注1", 1,null));
-//                symbolTexts.push(new SuperMap.Plot.SymbolText("标注3", 3,null));
-//                symbolTexts.push(new SuperMap.Plot.SymbolText("标注4", 4,null));
-//                symbolTexts.push(new SuperMap.Plot.SymbolText("标注5", 5,null));
-//                symbolTexts.push(new SuperMap.Plot.SymbolText("标注6", 6,null));
-//                symbolTexts.push(new SuperMap.Plot.SymbolText("标注7", 7,null));
+                symbolTexts.push(new SuperMap.Plot.SymbolText("陕西省西安市", 0, null));
+                symbolTexts.push(new SuperMap.Plot.SymbolText("天气：晴", 2, null));
 
-                var associatedUuid=evt.feature.geometry.uuid;
+                var associatedUuid = evt.feature.geometry.uuid;
                 plottingLayer.createSymbolText(associatedUuid, symbolTexts, "uuid-SymbolText", {}, {addFrame:false},{text:"对象标注"});
                 plottingEdit.activate();
-
             }
-
         }
 
         //对象标注1
@@ -320,7 +310,6 @@
 
                 plottingEdit.activate();
             }
-
         }
 
         //创建KJ机场兵力部署
@@ -335,8 +324,6 @@
 
             function symbolCreated(evt){
                 plottingLayer.events.un({"symbolcreated": symbolCreated});
-
-
 
                 var subSymbol = new SuperMap.Plot.SubSymbol();
                 subSymbol.libID = 421;
@@ -366,8 +353,6 @@
             }
         }
 
-
-
         //创建卫星
         function drawSatellite(){
             plottingEdit.deactivate();
@@ -383,7 +368,6 @@
             var uuid="iSatellite";
             plottingLayer.createSatellite(421, 80400, orbitPointWCs, "卫星", uuid, {}, {visible: true}, {text:"卫星自定义属性"});
             plottingEdit.activate();
-
         }
 
 
@@ -445,11 +429,6 @@
                 plottingEdit.activate();
             }
         }
-
-
-
-
-
 
         //创建KJ飞机航线
         function drawKJRoute(){
@@ -513,7 +492,6 @@
             routeNodes.push(routeNode3);
             routeNodes.push(routeNode4);
             var uuid="iKJRoute";//实体的唯一标识
-          //  plottingLayer.createAirRoute(arrRoutePts, routeNodes,uuid, {strokeColor:"#ff00e1"}, null, {text:"用户自定义属性"});
 
             plottingLayer.createAirRoute(arrRoutePts, routeNodes,uuid, null, null, {text:"用户自定义属性"});
             plottingEdit.activate();
@@ -677,8 +655,6 @@
             pts.push(routeNode7.positionPoint.clone());
             arrRoutPts.push(pts);
 
-
-
             var routeNodes = [];
             routeNodes.push(routeNode1);
             routeNodes.push(routeNode2);
@@ -695,10 +671,7 @@
             var uuid="iNavyRoute";//实体的唯一标识
             plottingLayer.createNavyRoute(arrRoutPts,routeNodes, uuid, null, null, {text:"用户自定义属性"});
             plottingEdit.activate();
-
-
         }
-
 
         //创建DD导弹航线
         function drawDDRoute(){

@@ -66,7 +66,7 @@ SuperMap.Layer.Tianditu = SuperMap.Class(SuperMap.CanvasLayer, {
      */
     initialize: function (options) {
         var me = this;
-        me.name = "Tianditu";
+        me.name = options && options.name || "Tianditu";
 
 //        options = SuperMap.Util.extend({
 //            maxExtent: new SuperMap.Bounds(

@@ -26,7 +26,7 @@ SuperMap.REST.GetGridCellInfosParameter = SuperMap.Class({
     X: null,
 
     /**
-     * APIProperty: X
+     * APIProperty: Y
      * {Number} 要查询的地理位置Y轴
      */
     Y: null,

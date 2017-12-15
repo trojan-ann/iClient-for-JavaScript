@@ -81,5 +81,8 @@ SuperMap.REST.GetFeaturesBySQLParameters = SuperMap.Class(SuperMap.REST.GetFeatu
         getFeatureMode:"SQL",
         queryParameter:params.queryParameter
     };
+      if(params.maxFeatures != null && !isNaN(params.maxFeatures) && params.maxFeatures >= 0) {
+          paramsBySql.maxFeatures = params.maxFeatures;
+      }
     return SuperMap.Util.toJSON(paramsBySql);
 };
